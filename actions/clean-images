@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# Destructive action - Destroys images on the host that are not running
+
+docker rmi $(docker images -aq)

@@ -1,0 +1,5 @@
+clean-containers:
+    description: Garbage collect non-running containers
+clean-images:
+    description: Garbage collect non-running images
+
