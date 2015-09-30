@@ -10,7 +10,7 @@ the [Juju composer](https://jujucharms.com/docs/devel/authors-charm-composing).
 In your charm that inherets docker, the integration can be as simple as placing
 the following in your charms `compose.yaml`:
 
-    includes: ['layer:layer-docker']
+    includes: ['layer:docker']
 
 From here, you simply ammend any hooks/reactive patterns you require to deliver
 and manage the lifecycle of your applications docker image.
