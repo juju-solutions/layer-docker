@@ -1,4 +1,4 @@
-name: layer-docker
+name: docker
 summary: juju-compose layer for Docker
 maintainers:
     - Charles Butler <charles.butler@canonical.com>

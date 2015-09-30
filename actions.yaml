@@ -1,0 +1,9 @@
+clean-containers:
+    description: Garbage collect non-running containers
+clean-images:
+    description: Garbage collect non-running images
+    options:
+        untagged:
+            type: boolean
+            description: Only remove untagged
+            default: true
