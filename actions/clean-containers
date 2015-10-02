@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# Destructive action - removes all non-running containers from the host
+
+docker rm $(docker ps -aq)

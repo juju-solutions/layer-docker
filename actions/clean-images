@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# Destructive action - Destroys images on the host that are not running
+
+untagged=$(action-get untagged)
+images=$(docker images | grep "^<none>" | awk "{print $3}")
+all_images=$(docker images -aq)
+
+if [[ ! -z "$images" && "$untagged" == "True" ]]; then
+    echo "Removing untagged images"
+    docker rmi $images
+    exit 0
+fi
+
+if [[ ! -z "$all_images" && "$untagged" ]]; then
+    echo "Removing all non-running images"
+    $(docker rmi $all_images)
+    ret=$?
+    if [ $ret > 0 ]; then
+    echo "Not all containers removed, perhaps you need to juju action do $JUJU_UNIT_NAME clean-containers first?"
+    action-set response.msg="Not all containers removed, perhaps you need to juju action do $JUJU_UNIT_NAME clean-containers first?"
+        action-set response.result=$(docker rmi $all_images)
+    fi
+    exit 0
+fi
