@@ -1,27 +1,30 @@
 # Charm Layer for Docker
 
-This repository contains the Charm layer for docker, which is a base layer in
-the [Juju composer](https://jujucharms.com/docs/devel/authors-charm-composing).
-
-
+This repository contains the Charm layer for docker, which can be used as a
+base layer for other Charms that use docker.  Please refer to the
+[Juju composer docs](https://jujucharms.com/docs/devel/authors-charm-composing).
 
 ## Usage
 
-In your charm that inherets docker, the integration can be as simple as placing
-the following in your charms `compose.yaml`:
+In a charm that wants to use docker, the integration can be as simple as placing
+the following in your charm's `compose.yaml`:
 
     includes: ['layer:docker']
 
-From here, you simply ammend any hooks/reactive patterns you require to deliver
+From here, you simply amend any hooks/reactive patterns you require to deliver
 and manage the lifecycle of your applications docker image.
 
+### Docker Compose
+
+This layer also installs the 'docker-compose' python package. So once the
+Docker layer is installed you have the ability to use
+[Docker Compose](https://docs.docker.com/compose/) functionality such as
+control files, and logging.
 
 ## Credit
 
-This charm delivers a slightly modified copy of the script contained at:
+This charm contains a slightly modified copy of the script contained at:
 [https://get.docker.io](https://get.docker.io)
 
 The modifications were raising status messages for Juju so its apparent what is
 happening to the end user following along with Juju's extended status feature.
-
-
