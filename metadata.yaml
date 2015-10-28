@@ -10,4 +10,6 @@ tags:
   - containers
   - layer
 subordinate: false
-
+requires:
+  etcd:
+    interface: etcd
