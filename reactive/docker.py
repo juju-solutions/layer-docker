@@ -1,9 +1,9 @@
 import os
 from subprocess import check_call
 
-from charmhelpers.core import hookenv
+from charmhelpers.core.hookenv import status_set
 
-from charms import reactive
+from charms.reactive import set_state
 from charms.reactive import hook
 from charms.reactive import when
 from charms.reactive import when_not
@@ -26,13 +26,13 @@ from charms.reactive import when_not
 @hook('install')
 def install():
     ''' Install the docker daemon, and supporting tooling '''
-    hookenv.status_set('maintenance', 'Installing Docker and AUFS')
+    status_set('maintenance', 'Installing Docker and AUFS')
     # Using getenv will return '' if CHARM_DIR is not an environment variable.
     charm_path = os.getenv('CHARM_DIR', '')
     install_script_path = os.path.join(charm_path, 'scripts/install_docker.sh')
     check_call([install_script_path])
-    hookenv.status_set('active', 'Docker installed, cycling for extensions')
-    reactive.set_state('docker.ready')
+    status_set('active', 'Docker installed, cycling for extensions')
+    set_state('docker.ready')
 
     # Install pip.
     check_call(['apt-get', 'install', '-y', 'python-pip'])
@@ -40,18 +40,16 @@ def install():
     check_call(['pip', 'install', '-U', 'docker-compose'])
     # Leave a status message that Docker is installed.
 
-
-@when('docker.ready')
-@when_not('docker.available')
-def add_user_to_docker_group():
+    # Make with the adding of the users to the groups
     check_call(['usermod', '-aG', 'docker', 'ubuntu'])
 
 
+
 @when('docker.ready')
 @when_not('docker.available')
-def zz_tango():
+def signal_workloads_start():
     ''' We can assume the pre-workload bits have completed now that docker.ready
     has been reacted to. Lets remove the predep work and continue on to being
     available '''
-    hookenv.status_set('active', 'Docker installed')
-    reactive.set_state('docker.available')
+    status_set('active', 'Docker installed')
+    set_state('docker.available')
