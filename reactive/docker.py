@@ -2,6 +2,7 @@ import os
 from subprocess import check_call
 
 from charmhelpers.core.hookenv import status_set
+from charmhelpers.core.hookenv import config
 
 from charms.reactive import set_state
 from charms.reactive import hook
@@ -44,6 +45,12 @@ def install():
     check_call(['usermod', '-aG', 'docker', 'ubuntu'])
 
 
+@when_not('cgroups.modified')
+def enable_grub_cgroups():
+    cfg = config()
+    if cfg.get('enable-cgroups'):
+        check_call(['scripts/enable_grub_cgroups.sh'])
+        set_state('cgroups.modified')
 
 @when('docker.ready')
 @when_not('docker.available')
