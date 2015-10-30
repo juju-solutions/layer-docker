@@ -33,7 +33,7 @@ def chdir(path):
     '''Change the current working directory to a different directory to run
     commands and return to the previous directory after the command is done.'''
     if not os.path.exists("{}/docker-compose.yml".format(self.workspace) or
-    not os.path.exists("{}"/docker-compose.yaml)):
+    not os.path.exists("{}/docker-compose.yaml".format(self.workspace))):
         raise OSError "docker-compose.yml not found in workspace"
     old_dir = os.getcwd()
     os.chdir(path)
