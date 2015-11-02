@@ -3,12 +3,14 @@ import os
 from contextlib import contextmanager
 from shlex import split
 from subprocess import check_call
+from workspace import Workspace
 
 # Wrapper and convenience methods for charming w/ docker compose in python
 class Compose:
-    def __init__(self, workspace):
-        self.workspace = workspace
-        self.validate_workspace()
+    def __init__(self, workspace, strict=False):
+        self.workspace = Workspace(workspace)
+        if strict:
+            self.workspace.validate()
 
     def start_service(self, service=None):
         if service:
@@ -19,21 +21,15 @@ class Compose:
 
     def kill_service(self, service=None):
         if service:
-            cmd = "docker-compose kill -d {}".format(service)
+            cmd = "docker-compose kill {}".format(service)
         else:
             cmd = "docker-compose kill"
         self.run(cmd)
 
     def run(self, cmd):
-        with chdir(self.workspace):
+        with chdir("{}".format(self.workspace)):
             check_call(split(cmd))
 
-
-    def validate_workspace(self):
-        dcyml = os.path.isfile("{}/docker-compose.yml".format(self.workspace))
-        dcyaml = os.path.isfile("{}/docker-compose.yaml".format(self.workspace))
-        if not dcyml and not dcyaml:
-            raise OSError("docker-compose.yml not found in workspace")
 
 # This is helpful for setting working directory context
 @contextmanager
