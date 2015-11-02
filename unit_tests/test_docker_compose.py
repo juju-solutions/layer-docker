@@ -31,16 +31,19 @@ class TestCompose:
         with patch('lib.charms.docker.compose.Compose.run') as s:
             compose.up()
             expect = 'docker-compose up -d'
+            s.assert_called_with(expect)
 
     def test_kill_service(self, compose):
         with patch('lib.charms.docker.compose.Compose.run') as s:
             compose.kill('nginx')
             expect = 'docker-compose kill nginx'
+            s.assert_called_with(expect)
 
     def test_kill_service(self, compose):
         with patch('lib.charms.docker.compose.Compose.run') as s:
             compose.kill()
             expect = 'docker-compose kill'
+            s.assert_called_with(expect)
 
     @patch('lib.charms.docker.compose.chdir')
     @patch('lib.charms.docker.compose.check_output')
