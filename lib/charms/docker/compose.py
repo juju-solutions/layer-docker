@@ -2,24 +2,45 @@ import os
 
 from contextlib import contextmanager
 from shlex import split
-from subprocess import check_call
+from subprocess import check_output
 from workspace import Workspace
 
 # Wrapper and convenience methods for charming w/ docker compose in python
 class Compose:
-    def __init__(self, workspace, strict=False):
+    def __init__(self, workspace, strict=True):
+        '''
+        Object to manage working with Docker-Compose on the CLI. exposes
+        a natural language for performing common tasks with docker in
+        juju charms.
+
+        @param workspace - Define the CWD for docker-compose execution
+
+        @param strict - Enable/disable workspace validation
+        '''
         self.workspace = Workspace(workspace)
         if strict:
             self.workspace.validate()
 
-    def start_service(self, service=None):
+    def up(self, service=None):
+        '''
+        Convenience method that wraps `docker-compose up`
+
+        usage: c.up('nginx')  to start the 'nginx' service from the
+        defined `docker-compose.yml` as a daemon
+        '''
         if service:
             cmd = "docker-compose up -d {}".format(service)
         else:
             cmd = "docker-compose up -d"
         self.run(cmd)
 
-    def kill_service(self, service=None):
+    def kill(self, service=None):
+        '''
+        Convenience method that wraps `docker-compose kill`
+
+        usage: c.kill('nginx')  to kill the 'nginx' service from the
+        defined `docker-compose.yml`
+        '''
         if service:
             cmd = "docker-compose kill {}".format(service)
         else:
@@ -27,8 +48,19 @@ class Compose:
         self.run(cmd)
 
     def run(self, cmd):
+        '''
+        chdir sets working context on the workspace
+
+        @param: cmd - String of the command to run. eg: echo "hello world"
+        the string is passed through shlex.parse() for convenience.
+
+        returns STDOUT of command execution
+
+        usage: c.run('docker-compose ps')
+        '''
         with chdir("{}".format(self.workspace)):
-            check_call(split(cmd))
+            out = check_output(split(cmd))
+            return out
 
 
 # This is helpful for setting working directory context

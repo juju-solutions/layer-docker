@@ -23,30 +23,30 @@ class TestCompose:
 
     def test_start_service(self, compose):
         with patch('lib.charms.docker.compose.Compose.run') as s:
-            compose.start_service('nginx')
+            compose.up('nginx')
             expect = 'docker-compose up -d nginx'
             s.assert_called_with(expect)
 
     def test_start_default_formation(self, compose):
         with patch('lib.charms.docker.compose.Compose.run') as s:
-            compose.start_service()
+            compose.up()
             expect = 'docker-compose up -d'
 
     def test_kill_service(self, compose):
         with patch('lib.charms.docker.compose.Compose.run') as s:
-            compose.kill_service('nginx')
+            compose.kill('nginx')
             expect = 'docker-compose kill nginx'
 
     def test_kill_service(self, compose):
         with patch('lib.charms.docker.compose.Compose.run') as s:
-            compose.kill_service()
+            compose.kill()
             expect = 'docker-compose kill'
 
     @patch('lib.charms.docker.compose.chdir')
-    @patch('lib.charms.docker.compose.check_call')
+    @patch('lib.charms.docker.compose.check_output')
     def test_run(self, ccmock, chmock):
         compose = Compose('files/workspace', strict=False)
-        compose.start_service('nginx')
+        compose.up('nginx')
         chmock.assert_called_with('files/workspace')
         ccmock.assert_called_with(['docker-compose', 'up', '-d', 'nginx'])
 
@@ -56,8 +56,8 @@ class TestCompose:
         cwdmock.return_value = '/tmp'
         with patch('os.chdir') as chmock:
             compose = Compose('files/workspace', strict=False)
-            with patch('lib.charms.docker.compose.check_call'):
-                compose.start_service('nginx')
+            with patch('lib.charms.docker.compose.check_output'):
+                compose.up('nginx')
                 # We can only test the return called with in this manner.
                 # So check that we at least reset context
                 chmock.assert_called_with('/tmp')
