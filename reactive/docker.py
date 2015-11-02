@@ -45,6 +45,7 @@ def install():
     check_call(['usermod', '-aG', 'docker', 'ubuntu'])
 
 
+@when('docker.ready')
 @when_not('cgroups.modified')
 def enable_grub_cgroups():
     cfg = config()
