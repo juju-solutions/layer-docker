@@ -1,3 +1,5 @@
 .tox
 .cache
 *.pyc
+.coverage
+.unit-state.db
