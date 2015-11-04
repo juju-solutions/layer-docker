@@ -21,6 +21,12 @@ Docker layer is installed you have the ability to use
 [Docker Compose](https://docs.docker.com/compose/) functionality such as
 control files, and logging.
 
+### Memory Accounting
+The charm supports altering the GRUB2 options enabling cgroups and memory
+accounting. Changing this value will reboot the host, and any running workloads
+are at the mery of the charm author inhereting from this charm. Please use
+`--restart=always` on your container runs that need to be persistent.
+
 ## Credit
 
 This charm contains a slightly modified copy of the script contained at:
