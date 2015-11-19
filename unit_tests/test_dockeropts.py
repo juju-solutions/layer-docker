@@ -1,4 +1,4 @@
-from lib.dockeropts import DockerOpts
+from lib.charms.docker.dockeropts import DockerOpts
 
 
 class TestDockerOpts:
