@@ -14,17 +14,51 @@ the following in your charm's `compose.yaml`:
 From here, you simply amend any hooks/reactive patterns you require to deliver
 and manage the lifecycle of your applications docker image.
 
+## States
+
+The docker layer raises a few synthetic events:
+
+- docker.ready
+
+- docker.available
+
+##### docker.ready
+
+When docker.ready is set, this event is before we signify to other
+layers that we are ready to start workloads, which should allow for
+docker extensions to be installed free of disrupting active workloads.
+
+For example, installing SDN support and getting the daemon configured
+for TCP connections.
+
+```
+@when('docker.ready')
+def start_flannel_networking():
+    # do something here
+```
+
+##### docker.available
+
+When docker.available is set, the daemon is considered fully configured
+and ready to accept workloads.
+
+```
+@when('docker.available')
+def start_my_workload():
+    # do something with docker
+```
+
 ### Docker Compose
 
-This layer also installs the 'docker-compose' python package. So once the
-Docker layer is installed you have the ability to use
-[Docker Compose](https://docs.docker.com/compose/) functionality such as
-control files, and logging.
+ This layer also installs the 'docker-compose' python package from pypi. So
+once the Docker layer is installed you have the ability to use [Docker
+Compose](https://docs.docker.com/compose/) functionality such as control files,
+and logging.
 
 ### Memory Accounting
-The charm supports altering the GRUB2 options enabling cgroups and memory
+The charm supports altering the GRUB2 options enabling CGROUPS and memory
 accounting. Changing this value will reboot the host, and any running workloads
-are at the mery of the charm author inhereting from this charm. Please use
+are at the mercy of the charm author inheriting from this charm. Please use
 `--restart=always` on your container runs that need to be persistent.
 
 ## Credit
