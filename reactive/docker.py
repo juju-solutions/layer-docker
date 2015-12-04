@@ -12,13 +12,13 @@ from charms.reactive import when_not
 # 2 Major events are emitted from this layer.
 #
 # `docker.ready` is an event intended to signal other layers that need to
-# plug into the plumbing to extend the docker daemon. Such as fire up a bootstrap
-# docker daemon, or predependency fetch + dockeropt rendering
+# plug into the plumbing to extend the docker daemon. Such as fire up a
+# bootstrap docker daemon, or predependency fetch + dockeropt rendering
 #
 # `docker.available` means the docker daemon setup has settled and is prepared
-# to run workloads. This is a broad state that has large implications should you
-# decide to remove it. Production workloads can be lost if no restart flag is
-# provided.
+# to run workloads. This is a broad state that has large implications should
+# you decide to remove it. Production workloads can be lost if no restart flag
+# is provided.
 
 # Be sure you bind to it appropriately in your workload layer and
 # react to the proper event.
@@ -52,6 +52,7 @@ def enable_grub_cgroups():
     if cfg.get('enable-cgroups'):
         check_call(['scripts/enable_grub_cgroups.sh'])
         set_state('cgroups.modified')
+
 
 @when('docker.ready')
 @when_not('docker.available')
