@@ -14,7 +14,7 @@ the following in your charm's `compose.yaml`:
 From here, you simply amend any hooks/reactive patterns you require to deliver
 and manage the lifecycle of your applications docker image.
 
-## States
+### States
 
 The docker layer raises a few synthetic events:
 
@@ -50,7 +50,7 @@ def start_my_workload():
 
 ### Docker Compose
 
- This layer also installs the 'docker-compose' python package from pypi. So
+ This layer installs the 'docker-compose' python package from pypi. So
 once the Docker layer is installed you have the ability to use [Docker
 Compose](https://docs.docker.com/compose/) functionality such as control files,
 and logging.
@@ -61,7 +61,7 @@ accounting. Changing this value will reboot the host, and any running workloads
 are at the mercy of the charm author inheriting from this charm. Please use
 `--restart=always` on your container runs that need to be persistent.
 
-## charms.docker
+### charms.docker
 
 This layer also includes a wheelhouse of `charms.docker` a python library to make
 charming with docker, and configuring the docker daemon much easier, and syntactically
