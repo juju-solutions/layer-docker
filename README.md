@@ -61,6 +61,12 @@ accounting. Changing this value will reboot the host, and any running workloads
 are at the mercy of the charm author inheriting from this charm. Please use
 `--restart=always` on your container runs that need to be persistent.
 
+## charms.docker
+
+This layer also includes a wheelhouse of `charms.docker` a python library to make
+charming with docker, and configuring the docker daemon much easier, and syntactically
+enjoyable. For more information about this library see the [project](http://github.com/juju-solutions/charms.docker)
+
 ## Credit
 
 This charm contains a slightly modified copy of the script contained at:
