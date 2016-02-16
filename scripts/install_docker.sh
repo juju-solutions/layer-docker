@@ -122,6 +122,10 @@ do_install() {
 			if [ -z "$dist_version" ] && [ -r /etc/lsb-release ]; then
 				dist_version="$(. /etc/lsb-release && echo "$DISTRIB_CODENAME")"
 			fi
+            # TODO: Delete this on docker 1.12 release http://github.com/juju-solutions/layer-docker/issues/25
+            if [ "${dist_version}" == "xenial" ]; then
+                dist_version="wily";
+            fi
 		;;
 
 		debian)
