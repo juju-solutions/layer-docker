@@ -10,7 +10,4 @@ tags:
   - containers
   - layer
 subordinate: false
-series:
-  - trusty
-  - wily
-  - xenial
+
