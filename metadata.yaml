@@ -10,4 +10,7 @@ tags:
   - containers
   - layer
 subordinate: false
-
+provides:
+  dockerhost:
+    interface: dockerhost
+    scope: container
