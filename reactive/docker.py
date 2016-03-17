@@ -9,6 +9,8 @@ from charms.reactive import hook
 from charms.reactive import when
 from charms.reactive import when_not
 
+from charms import layer
+
 # 2 Major events are emitted from this layer.
 #
 # `docker.ready` is an event intended to signal other layers that need to
@@ -27,6 +29,16 @@ from charms.reactive import when_not
 @hook('install')
 def install():
     ''' Install the docker daemon, and supporting tooling '''
+
+    # Often when building layer-docker based subordinates, you dont need to
+    # incur the overhead of installing docker. This tuneable layer option
+    # allows you to disable the exec of that install routine, and instead short
+    # circuit immediately to docker.available, so you can charm away!
+    layer_opts = layer.options('docker')
+    if layer_opts['skip-install']:
+        set_state('docker.available')
+        set_state('docker.ready')
+
     status_set('maintenance', 'Installing Docker and AUFS')
     # Using getenv will return '' if CHARM_DIR is not an environment variable.
     charm_path = os.getenv('CHARM_DIR', '')
@@ -35,10 +47,7 @@ def install():
     status_set('active', 'Docker installed, cycling for extensions')
     set_state('docker.ready')
 
-    # Install pip.
-    check_call(['apt-get', 'install', '-y', 'python-pip'])
-    # Pip install docker-compose.
-    check_call(['pip', 'install', '-U', 'docker-compose'])
+    check_call(['apt-get', 'install', '-y', 'docker-compose'])
     # Leave a status message that Docker is installed.
 
     # Make with the adding of the users to the groups
