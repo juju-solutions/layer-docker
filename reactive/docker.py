@@ -38,6 +38,7 @@ def install():
     if layer_opts['skip-install']:
         set_state('docker.available')
         set_state('docker.ready')
+        return
 
     status_set('maintenance', 'Installing Docker and AUFS')
     # Using getenv will return '' if CHARM_DIR is not an environment variable.
