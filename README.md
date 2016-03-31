@@ -48,6 +48,16 @@ def start_my_workload():
     # do something with docker
 ```
 
+### Layer Options
+
+##### skip-install
+
+Skips the installation of docker and raises the `docker.available` state. This
+is particularly useful when programming subordinate charms from layer-docker,
+where you know docker is already installed on the host. This allows you to
+skip the potential 90 second install routine, and go straight to deploying
+your application.
+
 ### Docker Compose
 
  This layer installs the 'docker-compose' python package from pypi. So

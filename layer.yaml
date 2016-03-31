@@ -1,4 +1,5 @@
 includes: ['layer:basic']
+repo: git@github.com:juju-solutions/layer-docker.git
 defines:
   skip-install:
     description: Useful when creating docker subordinates, skip the install routine

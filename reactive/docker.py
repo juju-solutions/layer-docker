@@ -48,9 +48,6 @@ def install():
     status_set('active', 'Docker installed, cycling for extensions')
     set_state('docker.ready')
 
-    check_call(['apt-get', 'install', '-y', 'docker-compose'])
-    # Leave a status message that Docker is installed.
-
     # Make with the adding of the users to the groups
     check_call(['usermod', '-aG', 'docker', 'ubuntu'])
 
