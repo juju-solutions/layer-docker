@@ -8,7 +8,7 @@ documentation.
 ## Usage
 
 In a layer that wants to use docker, the integration can be as simple as
-placing the following in the `compose.yaml` file:
+placing the following in the `layer.yaml` file:
 
 ```yaml
 includes: ['layer:docker']
@@ -20,7 +20,7 @@ documentation on [how to write a layer](https://jujucharms.com/docs/devel/develo
 
 Once you have the code written to manage your container(s) you need to assemble
 the charm from the layers. To do this run the `charm build` command from the
-layer you just created.
+layer directory you just created.
 
 ```
 charm build
@@ -29,8 +29,11 @@ charm build
 Now you should be able to deploy the assembled charm.
 
 ```
-juju deploy local:<series>/<charm-name>
+juju deploy ./<series>/<charm-name>
 ```
+
+Where series it the code name for Ubuntu releases, such as "trusty" or "xenial"
+and charm-name is what you named the layer in metadata.yaml.
 
 ### States
 
@@ -49,7 +52,7 @@ docker extensions to be installed free of disrupting active workloads.
 For example, installing SDN support and getting the daemon configured
 for TCP connections.
 
-```
+```python
 @when('docker.ready')
 def start_flannel_networking():
     # do something here
@@ -60,7 +63,7 @@ def start_flannel_networking():
 When docker.available is set, the daemon is considered fully configured
 and ready to accept workloads.
 
-```
+```python
 @when('docker.available')
 def start_my_workload():
     # do something with docker
@@ -78,7 +81,7 @@ your application.
 
 ### Docker Compose
 
- This layer installs the 'docker-compose' python package from pypi. So
+This layer installs the 'docker-compose' python package from pypi. So
 once the Docker layer is installed you have the ability to use [Docker
 Compose](https://docs.docker.com/compose/) functionality such as control files,
 and logging.
