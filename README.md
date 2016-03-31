@@ -1,18 +1,36 @@
 # Charm Layer for Docker
 
 This repository contains the Charm layer for docker, which can be used as a
-base layer for other Charms that use docker.  Please refer to the
-[Juju composer docs](https://jujucharms.com/docs/devel/authors-charm-composing).
+base layer for other Charms that use docker. Please refer to the
+[Charm Layers](https://jujucharms.com/docs/devel/developer-layers)
+documentation.
 
 ## Usage
 
-In a charm that wants to use docker, the integration can be as simple as placing
-the following in your charm's `compose.yaml`:
+In a layer that wants to use docker, the integration can be as simple as
+placing the following in the `compose.yaml` file:
 
-    includes: ['layer:docker']
+```yaml
+includes: ['layer:docker']
+```
 
 From here, you simply amend any hooks/reactive patterns you require to deliver
-and manage the lifecycle of your applications docker image.
+and manage the lifecycle of your applications docker image. Refer to the
+documentation on [how to write a layer](https://jujucharms.com/docs/devel/developer-layer-example).
+
+Once you have the code written to manage your container(s) you need to assemble
+the charm from the layers. To do this run the `charm build` command from the
+layer you just created.
+
+```
+charm build
+```
+
+Now you should be able to deploy the assembled charm.
+
+```
+juju deploy local:<series>/<charm-name>
+```
 
 ### States
 
@@ -73,9 +91,10 @@ are at the mercy of the charm author inheriting from this charm. Please use
 
 ### charms.docker
 
-This layer also includes a wheelhouse of `charms.docker` a python library to make
-charming with docker, and configuring the docker daemon much easier, and syntactically
-enjoyable. For more information about this library see the [project](http://github.com/juju-solutions/charms.docker)
+This layer also includes a wheelhouse of `charms.docker` a python library to
+make charming with docker, and configuring the docker daemon much easier, and
+syntactically enjoyable. For more information about this library see the
+[charms.docker project](http://github.com/juju-solutions/charms.docker).
 
 ## Credit
 
