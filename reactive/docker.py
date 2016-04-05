@@ -4,6 +4,7 @@ from subprocess import check_call
 from charmhelpers.core.hookenv import status_set
 from charmhelpers.core.hookenv import config
 from charmhelpers.core.hookenv import storage_get
+from charmhelpers.core.hookenv import storage_list
 
 from charmhelpers.fetch import apt_install
 
@@ -85,28 +86,19 @@ def handle_block_storage_pools():
     fs_opts = layer.options('docker')
     mount_path = '/var/lib/docker'
 
+    storage_ids = storage_list()
+    for sid in storage_ids:
+        storage = storage_get(sid)
+        devices.append(storage['location'])
+
     if fs_opts['storage-driver'] == 'btrfs':
         pkg_list = ['btrfs-tools']
         apt_install(pkg_list, fatal=True)
 
-        incoming_device = storage_get('location')
-
-        cmd = ["mkfs.btrfs", "-f", incoming_device]
-        subprocess.check_call(cmd)
-
-        if not os.path.exists(mount_path):
-            os.makedirs(mount_path)
-
-        fstab_entry = "{} {} btrfs defaults 0 0\n".format(incoming_device,
-                                                          mount_path)
-
-        if not is_state('docker.storage.btrfs'):
-            with open('/etc/fstab', 'a') as ap:
-                ap.write(fstab_entry)
-                set_state('docker.storage.btrfs')
-
-        cmd = ['mount', '-a']
-        subprocess.check_call(cmd)
+        btrfs_pool = BtrfsPool.create(mount_path, devices)
 
     if fs_opts['storage-driver'] == 'zfs':
-        pass
+        pkg_list = ['zfsutils-linux']
+        apt_install(pkg_list, fatal=True)
+        
+        zfs_pool = ZfsPool.create(mount_path, devices)
