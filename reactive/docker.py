@@ -14,7 +14,7 @@ from charms.reactive import hook
 from charms.reactive import when
 from charms.reactive import when_not
 
-import subprocess
+from btrfs import BtrfsPool
 
 from charms import layer
 
@@ -94,6 +94,7 @@ def handle_block_storage_pools():
     if fs_opts['storage-driver'] == 'btrfs':
         pkg_list = ['btrfs-tools']
         apt_install(pkg_list, fatal=True)
+        bfs = BtrfsPool.create(mountPoint=mount_path, devices=devices)
 
         btrfs_pool = BtrfsPool.create(mount_path, devices)
 
