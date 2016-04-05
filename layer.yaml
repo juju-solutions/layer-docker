@@ -5,3 +5,11 @@ defines:
     description: Useful when creating docker subordinates, skip the install routine
     type: boolean
     default: false
+  storage-driver:
+    type: string
+    enum: ['overlay', 'aufs', 'btrfs', 'zfs']
+    default: btrfs
+    description: |
+      Used in conjunction with the storage volume in metadata.yaml.
+      Supported providers, when prompted, will allow you to mount a block
+      device, formatted for use with the storage driver configured here.

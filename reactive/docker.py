@@ -3,11 +3,17 @@ from subprocess import check_call
 
 from charmhelpers.core.hookenv import status_set
 from charmhelpers.core.hookenv import config
+from charmhelpers.core.hookenv import storage_get
+
+from charmhelpers.fetch import apt_install
 
 from charms.reactive import set_state
+from charms.reactive import is_state
 from charms.reactive import hook
 from charms.reactive import when
 from charms.reactive import when_not
+
+import subprocess
 
 from charms import layer
 
@@ -69,3 +75,38 @@ def signal_workloads_start():
     available '''
     status_set('active', 'Docker installed')
     set_state('docker.available')
+
+
+@hook('disk-pool-storage-attached')
+def handle_block_storage_pools():
+    ''' disk-pool is a fstype used when you're using pooling storage driver
+    types. For all supported options, see the configured layer option in
+    layer.yaml. '''
+    fs_opts = layer.options('docker')
+    mount_path = '/var/lib/docker'
+
+    if fs_opts['storage-driver'] == 'btrfs':
+        pkg_list = ['btrfs-tools']
+        apt_install(pkg_list, fatal=True)
+
+        incoming_device = storage_get('location')
+
+        cmd = ["mkfs.btrfs", "-f", incoming_device]
+        subprocess.check_call(cmd)
+
+        if not os.path.exists(mount_path):
+            os.makedirs(mount_path)
+
+        fstab_entry = "{} {} btrfs defaults 0 0\n".format(incoming_device,
+                                                          mount_path)
+
+        if not is_state('docker.storage.btrfs'):
+            with open('/etc/fstab', 'a') as ap:
+                ap.write(fstab_entry)
+                set_state('docker.storage.btrfs')
+
+        cmd = ['mount', '-a']
+        subprocess.check_call(cmd)
+
+    if fs_opts['storage-driver'] == 'zfs':
+        pass
