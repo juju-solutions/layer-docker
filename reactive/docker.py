@@ -9,12 +9,12 @@ from charmhelpers.core.hookenv import storage_list
 from charmhelpers.fetch import apt_install
 
 from charms.reactive import set_state
-from charms.reactive import is_state
 from charms.reactive import hook
 from charms.reactive import when
 from charms.reactive import when_not
 
 from btrfs import BtrfsPool
+from zfs import ZfsPool
 
 from charms import layer
 
@@ -85,6 +85,7 @@ def handle_block_storage_pools():
     layer.yaml. '''
     fs_opts = layer.options('docker')
     mount_path = '/var/lib/docker'
+    devices = []
 
     storage_ids = storage_list()
     for sid in storage_ids:
@@ -95,11 +96,10 @@ def handle_block_storage_pools():
         pkg_list = ['btrfs-tools']
         apt_install(pkg_list, fatal=True)
         bfs = BtrfsPool.create(mountPoint=mount_path, devices=devices)
-
-        btrfs_pool = BtrfsPool.create(mount_path, devices)
+        bfs.mount(devices[0], mount_path)
 
     if fs_opts['storage-driver'] == 'zfs':
         pkg_list = ['zfsutils-linux']
         apt_install(pkg_list, fatal=True)
-        
-        zfs_pool = ZfsPool.create(mount_path, devices)
+
+        ZfsPool.create(mount_path, devices)
