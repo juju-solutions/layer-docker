@@ -20,16 +20,10 @@ class StoragePool(object):
         '''Return a new StoragePool object of devices at the mount point.'''
         pass
 
-    def mount(self, device, mountPoint):
+    def mount(self, mountPoint):
         '''Mount a filesystem.'''
         pass
 
-    def umount(self, device='', mountPoint='', force=False):
+    def umount(self, mountPoint, force=False):
         '''Detatch the file system from the file hierarchy.'''
         pass
-
-
-class ToolsNotFound(Exception):
-    def __init__(self, message):
-        # Call the base class constructor with the parameters it needs
-        super(Exception, self).__init__(message)
