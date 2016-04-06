@@ -38,16 +38,12 @@ class BtrfsPool(StoragePool):
         # abandon all hope, data of the devices initializing this pool
         check_call(cmd)
 
-        o.mount(devices, mountPoint)
         return o
 
-    def add(self, device, mountpoint):
+    def add(self, device, mountPoint):
         '''Add a device to the btrfs storage pool.'''
         print('btrfs add')
-        cmd = ['btrfs', 'device', 'add', '-f', device, mountpoint]
-        check_call(cmd)
-        print('btrfs balance')
-        cmd = ['btrfs', 'balance', mountpoint]
+        cmd = ['btrfs', 'device', 'add', '-f', device, mountPoint]
         check_call(cmd)
 
     def mount(self, device, mountPoint):
@@ -58,6 +54,7 @@ class BtrfsPool(StoragePool):
         mount_cmd = ['mount', '-t', 'btrfs', device[0], mountPoint]
         check_call(mount_cmd)
 
-    def umount(self, device='', mountPoint='', force=False):
-        '''Detatch the file system from the file hierarchy.'''
-        print('btrfs umount')
+    def rebalance(self, mountPoint):
+        print('btrfs rebalance')
+        cmd = ['btrfs', 'balance', mountPoint]
+        check_call(cmd)
