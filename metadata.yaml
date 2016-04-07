@@ -18,5 +18,4 @@ storage:
   disk-pool:
     type: block
     multiple:
-      range: 0-10
-    
+      range: 3-

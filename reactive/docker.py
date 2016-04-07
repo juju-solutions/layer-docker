@@ -95,8 +95,13 @@ def handle_block_storage_pools():
     if fs_opts['storage-driver'] == 'btrfs':
         pkg_list = ['btrfs-tools']
         apt_install(pkg_list, fatal=True)
-        bfs = BtrfsPool.create(mountPoint=mount_path, devices=devices)
-        bfs.mount(devices[0], mount_path)
+        try:
+            bfs = BtrfsPool(mount_path)
+            for dev in devices:
+                bfs.add(dev)
+        except OSError:
+            bfs = BtrfsPool.create(mountPoint=mount_path, devices=devices)
+            bfs.mount(devices[0], mount_path)
 
     if fs_opts['storage-driver'] == 'zfs':
         pkg_list = ['zfsutils-linux']
