@@ -14,3 +14,8 @@ provides:
   dockerhost:
     interface: dockerhost
     scope: container
+storage:
+  disk-pool:
+    type: block
+    multiple:
+      range: 3-

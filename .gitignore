@@ -3,3 +3,5 @@
 *.pyc
 .coverage
 .unit-state.db
+.vagrant
+Vagrantfile
