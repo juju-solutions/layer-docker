@@ -1,4 +1,6 @@
-includes: ['layer:basic']
+includes:
+  - 'layer:basic'
+  - 'layer:storage'
 repo: https://github.com/juju-solutions/layer-docker.git
 defines:
   skip-install:
