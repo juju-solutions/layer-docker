@@ -7,3 +7,11 @@ defines:
     description: Useful when creating docker subordinates, skip the install routine
     type: boolean
     default: false
+  storage-driver:
+     type: string
+     description: The storage driver backend to use for devices to the charm.
+     default: zfs
+  mount-point:
+     type: string
+     description: The path to mount the storage volume(s) defined by storage-driver.
+     default: '/var/lib/docker'
