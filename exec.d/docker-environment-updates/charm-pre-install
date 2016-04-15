@@ -3,4 +3,4 @@
 set -e
 
 apt-get install -y python3-pip
-pip install -U setuptools
+pip3 install -U setuptools

@@ -1,5 +1,6 @@
 includes: ['layer:basic']
 repo: https://github.com/juju-solutions/layer-docker.git
+venv: true
 defines:
   skip-install:
     description: Useful when creating docker subordinates, skip the install routine
