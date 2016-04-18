@@ -1,4 +1,6 @@
-includes: ['layer:basic']
+includes: 
+  - 'layer:basic'
+  - 'layer:storage'
 tactics: ['tactics.docker.DockerWheelhouseTactic']
 repo: https://github.com/juju-solutions/layer-docker.git
 defines:
@@ -6,3 +8,7 @@ defines:
     description: Useful when creating docker subordinates, skip the install routine
     type: boolean
     default: false
+options:
+  storage:
+    storage-driver: zfs
+    mount-point: '/var/lib/docker'

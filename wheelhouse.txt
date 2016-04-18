@@ -2,4 +2,3 @@ setuptools>=19.6,<=20.0
 charms.docker>=0.0.1,<=2.0.0
 vcversioner>=2.0.0,<=3.0.0
 docker-compose>=1.0.0,<=2.0.0
-
