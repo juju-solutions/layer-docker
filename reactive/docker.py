@@ -5,7 +5,6 @@ from charmhelpers.core.hookenv import status_set
 from charmhelpers.core.hookenv import config
 
 from charms.reactive import set_state
-from charms.reactive import hook
 from charms.reactive import when
 from charms.reactive import when_not
 
@@ -26,7 +25,7 @@ from charms import layer
 # react to the proper event.
 
 
-@hook('install')
+@when_not('docker.ready')
 def install():
     ''' Install the docker daemon, and supporting tooling '''
 
