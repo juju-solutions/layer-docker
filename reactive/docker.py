@@ -3,10 +3,15 @@ from subprocess import check_call
 
 from charmhelpers.core.hookenv import status_set
 from charmhelpers.core.hookenv import config
+from charmhelpers.core.host import service_restart
+from charmhelpers.core.templating import render
 
+from charms.reactive import remove_state
 from charms.reactive import set_state
 from charms.reactive import when
 from charms.reactive import when_not
+
+from charms.docker import DockerOpts
 
 from charms import layer
 
@@ -68,3 +73,17 @@ def signal_workloads_start():
     available '''
     status_set('active', 'Docker installed')
     set_state('docker.available')
+
+
+@when('docker.restart')
+def recycle_daemon():
+    ''' Other layers should be able to trigger a daemon restart '''
+    status_set('maintenance', 'Restarting docker daemon')
+
+    # Re-render our docker daemon template at this time... because we're
+    # restarting. And its nice to play nice with others. Isn't that nice?
+    opts = DockerOpts()
+    render('docker.defaults', '/etc/default/docker', {'opts': opts.to_s()})
+
+    service_restart('docker')
+    remove_state('docker.restart')
