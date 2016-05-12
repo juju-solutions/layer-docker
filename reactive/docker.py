@@ -49,6 +49,10 @@ def install():
     charm_path = os.getenv('CHARM_DIR', '')
     install_script_path = os.path.join(charm_path, 'scripts/install_docker.sh')
     check_call([install_script_path])
+
+    opts = DockerOpts()
+    render('docker.defaults', '/etc/default/docker', {'opts': opts.to_s()})
+
     status_set('active', 'Docker installed, cycling for extensions')
     set_state('docker.ready')
 
