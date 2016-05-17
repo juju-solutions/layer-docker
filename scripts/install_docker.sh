@@ -218,6 +218,15 @@ do_install() {
 				( set -x; $sh_c 'sleep 3; apt-get install -y -q curl ca-certificates' )
 				curl='curl -sSL'
 			fi
+			if [ "$dist_version" = "xenial" ]; then
+				$sh_c "mkdir -p /etc/systemd/system/docker.service.d"
+				$sh_c "cat >/etc/systemd/system/docker.service.d/10-docker-opts-support.conf" <<-'EOF'
+				[Service]
+				EnvironmentFile=-/etc/default/docker
+				ExecStart=
+				ExecStart=/usr/bin/docker daemon -H fd:// $DOCKER_OPTS
+				EOF
+			fi
 			(
             status-set maintenance "Adding PPA and installing docker"
 			set -x
