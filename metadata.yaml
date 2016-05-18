@@ -1,11 +1,11 @@
 name: docker
-summary: juju-compose layer for Docker
+summary: A Juju charm layer to use Docker containers in charms.
 maintainers:
     - Charles Butler <charles.butler@canonical.com>
-    - Matt Bruzek <matthew.bruzek@canonical.com>
+    - Matthew Bruzek <matthew.bruzek@canonical.com>
 description: |
-  A minimalist docker charm layer for use with juju compose,
-  powered by the reactive framework
+  A Juju charm layer that handles installing Docker, including a library to 
+  make it easier to use Docker containers inside a Juju model.
 tags:
   - containers
   - layer
