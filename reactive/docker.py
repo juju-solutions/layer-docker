@@ -1,10 +1,15 @@
 import os
+from slex import split
 from subprocess import check_call
+from subprocess import check_output
 
 from charmhelpers.core.hookenv import status_set
 from charmhelpers.core.hookenv import config
+from charmhelpers.core.host import lsb_release
 from charmhelpers.core.host import service_restart
 from charmhelpers.core.templating import render
+from charmhelpers.fetch import apt_install
+from charmhelpers.fetch import apt_update
 
 from charms.reactive import remove_state
 from charms.reactive import set_state
@@ -33,7 +38,6 @@ from charms import layer
 @when_not('docker.ready')
 def install():
     ''' Install the docker daemon, and supporting tooling '''
-
     # Often when building layer-docker based subordinates, you dont need to
     # incur the overhead of installing docker. This tuneable layer option
     # allows you to disable the exec of that install routine, and instead short
@@ -44,11 +48,17 @@ def install():
         set_state('docker.ready')
         return
 
-    status_set('maintenance', 'Installing Docker and AUFS')
-    # Using getenv will return '' if CHARM_DIR is not an environment variable.
-    charm_path = os.getenv('CHARM_DIR', '')
-    install_script_path = os.path.join(charm_path, 'scripts/install_docker.sh')
-    check_call([install_script_path])
+    status_set('maintenance', 'Installing AUFS and other tools')
+    kernel_release = check_output(['uname', '-r']).rstrip()
+    packages = [
+        'aufs-tools',
+        'git',
+        'linux-image-extra-{0}'.format(kernel_release),
+    ]
+    apt_update()
+    apt_install(packages)
+    # Install docker-engine from apt.
+    install_from_apt()
 
     opts = DockerOpts()
     render('docker.defaults', '/etc/default/docker', {'opts': opts.to_s()})
@@ -58,6 +68,30 @@ def install():
 
     # Make with the adding of the users to the groups
     check_call(['usermod', '-aG', 'docker', 'ubuntu'])
+
+
+def install_from_apt():
+    ''' Install docker from the apt repository. '''
+    # "apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80
+    # --recv-keys 58118E89F3A912897C070ADBF76221572C52609D"
+    cmd = 'apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80 ' \
+          '--recv-keys 58118E89F3A912897C070ADBF76221572C52609D'
+    check_call(split(cmd))
+    # "mkdir -p /etc/apt/sources.list.d"
+    if not os.path.isdir('/etc/apt/sources.list.d'):
+        os.makedirs('/etc/apt/sources.list.d')
+    # "echo deb https://apt.dockerproject.org/repo ${lsb_dist}-${dist_version}
+    # ${repo} > /etc/apt/sources.list.d/docker.list"
+    lsb = lsb_release()
+    dist = lsb['DISTRIB_ID'].lower()
+    code = lsb['DISTRIB_CODENAME']
+    deb = 'deb https://apt.dockerproject.org/repo {0} {1} main'.format(dist,
+                                                                       code)
+    with(open('/etc/apt/sources.list.d/docker.list', 'w+')) as stream:
+        stream.write(deb)
+    apt_update(fatal=True)
+    # apt-get install -o Dpkg::Options::=--force-confdef -y -q docker-engine'
+    apt_install(['docker-engine'], fatal=True)
 
 
 @when('docker.ready')
