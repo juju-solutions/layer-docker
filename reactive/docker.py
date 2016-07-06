@@ -1,5 +1,5 @@
 import os
-from slex import split
+from shlex import split
 from subprocess import check_call
 from subprocess import check_output
 
@@ -71,26 +71,39 @@ def install():
 
 
 def install_from_apt():
-    ''' Install docker from the apt repository. '''
+    ''' Install docker from the apt repository. This is a pyton adaptation of
+    the shell script found at https://get.docker.com/ '''
+    status_set('maintenance', 'Installing docker-engine from apt')
+    keyserver = 'hkp://p80.pool.sks-keyservers.net:80'
+    key = '58118E89F3A912897C070ADBF76221572C52609D'
+    # Enter the server and key in the apt-key management tool.
+    cmd = 'apt-key adv --keyserver {0} --recv-keys {1}'.format(keyserver, key)
     # "apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80
     # --recv-keys 58118E89F3A912897C070ADBF76221572C52609D"
-    cmd = 'apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80 ' \
-          '--recv-keys 58118E89F3A912897C070ADBF76221572C52609D'
     check_call(split(cmd))
-    # "mkdir -p /etc/apt/sources.list.d"
+    # The url to the server that contains the docker apt packages.
+    apt_url = 'https://apt.dockerproject.org'
+    # Get the package architecture (amd64), not the machine hardware (x86_64)
+    arch = check_output(['dpkg', '--print-architecture']).rstrip()
+    # Get the lsb information as a dictionary.
+    lsb = lsb_release()
+    # Ubuntu must be lowercased.
+    dist = lsb['DISTRIB_ID'].lower()
+    # The codename for the release.
+    code = lsb['DISTRIB_CODENAME']
+    # repo can be: main, testing or experimental
+    repo = 'main'
+    # deb [arch=amd64] https://apt.dockerproject.org/repo ubuntu-xenial main
+    deb = 'deb [arch={0}] {1}/repo {2}-{3} {4}'.format(
+            arch, apt_url, dist, code, repo)
+    # mkdir -p /etc/apt/sources.list.d
     if not os.path.isdir('/etc/apt/sources.list.d'):
         os.makedirs('/etc/apt/sources.list.d')
-    # "echo deb https://apt.dockerproject.org/repo ${lsb_dist}-${dist_version}
-    # ${repo} > /etc/apt/sources.list.d/docker.list"
-    lsb = lsb_release()
-    dist = lsb['DISTRIB_ID'].lower()
-    code = lsb['DISTRIB_CODENAME']
-    deb = 'deb https://apt.dockerproject.org/repo {0} {1} main'.format(dist,
-                                                                       code)
+    # Write the docker source file to the apt sources.list.d directory.
     with(open('/etc/apt/sources.list.d/docker.list', 'w+')) as stream:
         stream.write(deb)
     apt_update(fatal=True)
-    # apt-get install -o Dpkg::Options::=--force-confdef -y -q docker-engine'
+    # apt-get install -y -q docker-engine
     apt_install(['docker-engine'], fatal=True)
 
 
