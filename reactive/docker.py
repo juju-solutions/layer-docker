@@ -84,7 +84,8 @@ def install_from_apt():
     # The url to the server that contains the docker apt packages.
     apt_url = 'https://apt.dockerproject.org'
     # Get the package architecture (amd64), not the machine hardware (x86_64)
-    arch = check_output(['dpkg', '--print-architecture']).rstrip()
+    arch = check_output(split('dpkg --print-architecture'))
+    arch = arch.decode('utf-8').rstrip()
     # Get the lsb information as a dictionary.
     lsb = lsb_release()
     # Ubuntu must be lowercased.
