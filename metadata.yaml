@@ -9,10 +9,6 @@ description: |
 tags:
   - containers
   - layer
-series:
-  - trusty
-  - wily
-  - xenial
 subordinate: false
 provides:
   dockerhost:
