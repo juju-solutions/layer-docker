@@ -1,4 +1,4 @@
-includes: 
+includes:
   - 'layer:basic'
 repo: https://github.com/juju-solutions/layer-docker.git
 defines:
@@ -6,3 +6,5 @@ defines:
     description: Useful when creating docker subordinates, skip the install routine
     type: boolean
     default: false
+tactics: ['tactics.docker.DockerWheelhouseTactic']
+
