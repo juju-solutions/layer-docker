@@ -9,8 +9,15 @@ options:
   http_proxy:
      type: string
      default:
-     description: HTTP proxy to embed as an environment setting for Docker
+     description: |
+        URL to use for HTTP_PROXY to be used by Docker. Only useful in closed
+        environments where a proxy is the only option for routing to the
+        registry to pull images
   https_proxy:
     type: string
     default:
-    description: HTTPS proxy to embed as an environment setting for Docker daemon
+    description: |
+        URL to use for HTTPS_PROXY to be used by Docker. Only useful in closed
+        environments where a proxy is the only option for routing to the
+        registry to pull images
+
