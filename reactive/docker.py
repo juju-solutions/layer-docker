@@ -73,7 +73,7 @@ def install():
     check_call(['usermod', '-aG', 'docker', 'ubuntu'])
 
 
-@when_any('config.http_proxy.changed', 'config.https_proxy.changed')
+@when_any('config.changed.http_proxy', 'config.changed.https_proxy')
 def restart_docker():
     set_state('docker.restart')
 
