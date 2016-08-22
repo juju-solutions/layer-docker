@@ -64,6 +64,7 @@ def install():
     opts = DockerOpts()
     render('docker.defaults', '/etc/default/docker', {'opts': opts.to_s()})
     render('docker.systemd', '/lib/systemd/system/docker.service', config())
+    reload_system_daemons()
 
     status_set('active', 'Docker installed, cycling for extensions')
     set_state('docker.ready')
@@ -144,5 +145,13 @@ def recycle_daemon():
     opts = DockerOpts()
     render('docker.defaults', '/etc/default/docker', {'opts': opts.to_s()})
     render('docker.systemd', '/lib/systemd/system/docker.service', config())
+    reload_system_daemons()
     service_restart('docker')
     remove_state('docker.restart')
+
+
+def reload_system_daemons():
+    ''' Reload the system daemons from on-disk configuration changes '''
+    command = ['systemctl', 'daemon-reload']
+    check_call(command)
+
