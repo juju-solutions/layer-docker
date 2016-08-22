@@ -6,3 +6,11 @@ options:
      Enable GRUB cgroup overrides cgroup_enable=memory swapaccount=1. WARNING
      changing this option will reboot the host - use with caution on production
      services
+  http_proxy:
+     type: string
+     default:
+     description: HTTP proxy to embed as an environment setting for Docker
+  https_proxy:
+    type: string
+    default:
+    description: HTTPS proxy to embed as an environment setting for Docker daemon

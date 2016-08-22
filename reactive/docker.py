@@ -14,6 +14,7 @@ from charmhelpers.fetch import apt_update
 from charms.reactive import remove_state
 from charms.reactive import set_state
 from charms.reactive import when
+from charms.reactive import when_any
 from charms.reactive import when_not
 
 from charms.docker import DockerOpts
@@ -62,12 +63,18 @@ def install():
 
     opts = DockerOpts()
     render('docker.defaults', '/etc/default/docker', {'opts': opts.to_s()})
+    render('docker.systemd', '/lib/systemd/system/docker.service', config())
 
     status_set('active', 'Docker installed, cycling for extensions')
     set_state('docker.ready')
 
     # Make with the adding of the users to the groups
     check_call(['usermod', '-aG', 'docker', 'ubuntu'])
+
+
+@when_any('config.http_proxy.changed', 'config.https_proxy.changed')
+def restart_docker():
+    set_state('docker.restart')
 
 
 def install_from_apt():
@@ -136,6 +143,6 @@ def recycle_daemon():
     # restarting. And its nice to play nice with others. Isn't that nice?
     opts = DockerOpts()
     render('docker.defaults', '/etc/default/docker', {'opts': opts.to_s()})
-
+    render('docker.systemd', '/lib/systemd/system/docker.service', config())
     service_restart('docker')
     remove_state('docker.restart')
