@@ -73,7 +73,7 @@ def install():
     check_call(['usermod', '-aG', 'docker', 'ubuntu'])
 
 
-@when_any('config.changed.http_proxy', 'config.changed.https_proxy')
+@when_any('config.http_proxy.changed', 'config.https_proxy.changed')
 def restart_docker():
     set_state('docker.restart')
 
@@ -154,4 +154,3 @@ def reload_system_daemons():
     ''' Reload the system daemons from on-disk configuration changes '''
     command = ['systemctl', 'daemon-reload']
     check_call(command)
-
