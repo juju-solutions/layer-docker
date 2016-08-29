@@ -1,0 +1,13 @@
+#!/bin/bash
+
+
+# this is not offline, allow failure for now, pending resolution of
+# https://github.com/juju/charm-tools/issues/184 in order to wheelhouse
+# pack the docker dependencies
+
+set +e
+apt-get install -y python-pip python3-pip
+pip install --upgrade pip
+pip3 install --upgrade pip
+pip install docker-compose
+pip3 install docker-compose
