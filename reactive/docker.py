@@ -6,6 +6,7 @@ from subprocess import check_output
 from charmhelpers.core.hookenv import status_set
 from charmhelpers.core.hookenv import config
 from charmhelpers.core.host import lsb_release
+from charmhelpers.core.host import service_reload
 from charmhelpers.core.host import service_restart
 from charmhelpers.core.templating import render
 from charmhelpers.fetch import apt_install
@@ -152,5 +153,10 @@ def recycle_daemon():
 
 def reload_system_daemons():
     ''' Reload the system daemons from on-disk configuration changes '''
-    command = ['systemctl', 'daemon-reload']
-    check_call(command)
+    lsb = lsb_release()
+    code = lsb['DISTRIB_CODENAME']
+    if code != 'trusty':
+        command = ['systemctl', 'daemon-reload']
+        check_call(command)
+    else:
+        service_reload('docker')
