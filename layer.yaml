@@ -6,3 +6,5 @@ defines:
     description: Useful when creating docker subordinates, skip the install routine
     type: boolean
     default: false
+excludes:
+  - LAYER_README.md
