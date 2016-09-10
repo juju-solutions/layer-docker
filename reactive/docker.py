@@ -60,7 +60,10 @@ def install():
     apt_update()
     apt_install(packages)
     # Install docker-engine from apt.
-    install_from_apt()
+    if config('install_from_upstream'):
+        install_from_upstream_apt()
+    else:
+        install_from_archive_apt()
 
     opts = DockerOpts()
     render('docker.defaults', '/etc/default/docker', {'opts': opts.to_s()})
@@ -79,7 +82,12 @@ def restart_docker():
     set_state('docker.restart')
 
 
-def install_from_apt():
+def install_from_archive_apt():
+    status_set('maintenance', 'Installing docker.io from apt archive')
+    apt_install(['docker.io'], fatal=True)
+
+
+def install_from_upstream_apt():
     ''' Install docker from the apt repository. This is a pyton adaptation of
     the shell script found at https://get.docker.com/ '''
     status_set('maintenance', 'Installing docker-engine from apt')
