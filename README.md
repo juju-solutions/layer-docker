@@ -33,8 +33,8 @@ juju deploy docker
 `--series` and the code name of the release "trusty" for 14.04 and "xenial" for
 16.04.
 
-Once deployed you have a docker-machine running on a unit in Juju. You can open
-a session to that machine and issue the `docker` command to start using it 
+Once deployed you have a docker-engine running on a unit in Juju. You can open
+a session to that unit and issue the `docker` command to start using it 
 right away.
 
 ```
@@ -45,7 +45,7 @@ $ docker run hello-world
 
 ## Scale out Usage
 
-Scaling out the docker Charm is as simple as adding additional docker units
+Scaling out the Charm is as simple as adding additional docker units
 with Juju `add-unit` command to expand your cluster. However, you will need an
 SDN solution to provide cross host networking. See the Known Limitations and 
 issues about this.
