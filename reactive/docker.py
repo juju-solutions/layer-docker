@@ -2,9 +2,11 @@ import os
 from shlex import split
 from subprocess import check_call
 from subprocess import check_output
+from subprocess import CalledProcessError
 
 from charmhelpers.core.hookenv import status_set
 from charmhelpers.core.hookenv import config
+from charmhelpers.core.hookenv import log
 from charmhelpers.core.host import lsb_release
 from charmhelpers.core.host import service_reload
 from charmhelpers.core.host import service_restart
@@ -137,17 +139,26 @@ def enable_grub_cgroups():
 @when('docker.ready')
 @when_not('docker.available')
 def signal_workloads_start():
-    ''' We can assume the pre-workload bits have completed now that docker.ready
-    has been reacted to. Lets remove the predep work and continue on to being
-    available '''
-    status_set('active', 'Docker installed')
+    ''' Signal to higher layers the container runtime is ready to run
+        workloads. At this time the only reasonable thing we can do
+        is determine if the container runtime is active. '''
+
+    # before we switch to active, probe the runtime to determine if
+    # it is available for workloads. Assumine response from daemon
+    # to be sufficient
+
+    if not _probe_runtime_availability():
+        status_set('waiting', 'Container runtime not available')
+        return
+
+    status_set('active', 'Container runtime available')
     set_state('docker.available')
 
 
 @when('docker.restart')
 def recycle_daemon():
     ''' Other layers should be able to trigger a daemon restart '''
-    status_set('maintenance', 'Restarting docker daemon')
+    status_set('maintenance', 'Restarting container runtime')
 
     # Re-render our docker daemon template at this time... because we're
     # restarting. And its nice to play nice with others. Isn't that nice?
@@ -156,6 +167,11 @@ def recycle_daemon():
     render('docker.systemd', '/lib/systemd/system/docker.service', config())
     reload_system_daemons()
     service_restart('docker')
+
+    if not _probe_runtime_availability():
+        status_set('waiting', 'Container runtime not available')
+        return
+    status_set('active', 'Container runtime available')
     remove_state('docker.restart')
 
 
@@ -168,3 +184,15 @@ def reload_system_daemons():
         check_call(command)
     else:
         service_reload('docker')
+
+
+def _probe_runtime_availability():
+    ''' Determine if the workload daemon is active and responding '''
+    try:
+        cmd = ['docker', 'info']
+        check_call(cmd)
+        return True
+    except CalledProcessError:
+        # Remove the availability state if we fail reachability
+        remove_state('docker.available')
+        return False
