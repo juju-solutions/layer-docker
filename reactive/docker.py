@@ -6,7 +6,6 @@ from subprocess import CalledProcessError
 
 from charmhelpers.core.hookenv import status_set
 from charmhelpers.core.hookenv import config
-from charmhelpers.core.hookenv import log
 from charmhelpers.core.host import lsb_release
 from charmhelpers.core.host import service_reload
 from charmhelpers.core.host import service_restart
