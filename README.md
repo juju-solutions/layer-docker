@@ -1,108 +1,98 @@
-# Charm Layer for Docker
+# Charm for Docker
 
-This repository contains the Charm layer for docker, which can be used as a
-base layer for other Charms that use docker. Please refer to the
-[Charm Layers](https://jujucharms.com/docs/devel/developer-layers)
-documentation.
+This charm deploys the [Docker](http://docker.com) engine within Juju. Docker 
+is an open platform for developers and sysadmins to build, ship, and run 
+distributed applications in containers.
 
-## Usage
+Docker containers wrap a piece of software in a complete file system that 
+contains everything needed to run an application on a server.
 
-In a layer that wants to use docker, the integration can be as simple as
-placing the following in the `layer.yaml` file:
+Docker focuses on distributing applications as containers that can be quickly 
+assembled from components that are run the same on different servers without 
+environmental dependencies. This eliminates the friction between development, 
+QA, and production environments.
 
-```yaml
-includes: ['layer:docker']
-```
+Most people will want to extend this charm to make their Docker container or 
+application deployable from Juju. The 
+[Charm layer](https://gthub.com/juju-solutions/layer-docker) can be extended to
+include docker container along with additional operational code. Please refer
+to the [Charm Layers](https://jujucharms.com/docs/devel/developer-layers)
+documentation on [jujucharms.com](https://jujucharms.com/docs) for more 
+information.
 
-From here, you simply amend any hooks/reactive patterns you require to deliver
-and manage the lifecycle of your applications docker image. Refer to the
-documentation on [how to write a layer](https://jujucharms.com/docs/devel/developer-layer-example).
+## Using the Docker Charm
 
-Once you have the code written to manage your container(s) you need to assemble
-the charm from the layers. To do this run the `charm build` command from the
-layer directory you just created.
-
-```
-charm build
-```
-
-Now you should be able to deploy the assembled charm.
+Docker does not require anything by default so you can deploy the Charm by the 
+following command.
 
 ```
-juju deploy ./<series>/<charm-name>
+juju deploy docker
 ```
 
-Where series it the code name for Ubuntu releases, such as "trusty" or "xenial"
-and charm-name is what you named the layer in metadata.yaml.
+**NOTE**: You can ask Juju to deploy a different release of Ubuntu by using the
+`--series` and the code name of the release "trusty" for 14.04 and "xenial" for
+16.04.
 
-### States
+Once deployed you have a docker-machine running on a unit in Juju. You can open
+a session to that machine and issue the `docker` command to start using it 
+right away.
 
-The docker layer raises a few synthetic events:
-
-- docker.ready
-
-- docker.available
-
-##### docker.ready
-
-When docker.ready is set, this event is before we signify to other
-layers that we are ready to start workloads, which should allow for
-docker extensions to be installed free of disrupting active workloads.
-
-For example, installing SDN support and getting the daemon configured
-for TCP connections.
-
-```python
-@when('docker.ready')
-def start_flannel_networking():
-    # do something here
+```
+juju ssh docker/0
+...
+$ docker run hello-world
 ```
 
-##### docker.available
+## Scale out Usage
 
-When docker.available is set, the daemon is considered fully configured
-and ready to accept workloads.
+Scaling out the docker Charm is as simple as adding additional docker units
+with Juju `add-unit` command to expand your cluster. However, you will need an
+SDN solution to provide cross host networking. See the Known Limitations and 
+issues about this.
 
-```python
-@when('docker.available')
-def start_my_workload():
-    # do something with docker
-```
+# Configuration
 
-### Layer Options
+- enable-cgroups = (false) : To enable memory and swap on system using GNU GRUB 
+(GNU GRand Unified Bootloader) set this value to 'true'. It updates the 
+`/etc/default/grub` file setting `GRUB_CMDLINE_LINUX` to 
+`cgroup_enable=memory swapaccount=1`. The default value is 'false'. 
+**WARNING**: changing this option will initiate a reboot of the host - use with
+caution on as your containers will shutdown when this configuration value is 
+set. 
 
-##### skip-install
+- http_proxy : The string URL that will set the HTTP_PROXY environment variable
+for Docker containers. Useful in environments with restricted networks where a 
+proxy is the only route to the registry to pull images. Setting this option 
+forces the Docker daemon to restart. 
 
-Skips the installation of docker and raises the `docker.available` state. This
-is particularly useful when programming subordinate charms from layer-docker,
-where you know docker is already installed on the host. This allows you to
-skip the potential 90 second install routine, and go straight to deploying
-your application.
+- https_proxy : The string URL that will set the HTTPS_PROXY environment 
+variable for Docker containers. Useful in environments with restricted networks
+where a proxy is the only route to the registry to pull images. Setting this
+option forces the Docker daemon to restart.
 
-### Docker Compose
+## Docker Compose
 
-This layer installs the 'docker-compose' python package from pypi. So
-once the Docker layer is installed you have the ability to use [Docker
+This Charm also installs the 'docker-compose' python package using pip. So
+once the Charm has finished installing you have the ability to use [Docker
 Compose](https://docs.docker.com/compose/) functionality such as control files,
 and logging.
 
-### Memory Accounting
-The charm supports altering the GRUB2 options enabling CGROUPS and memory
-accounting. Changing this value will reboot the host, and any running workloads
-are at the mercy of the charm author inheriting from this charm. Please use
-`--restart=always` on your container runs that need to be persistent.
+# Contact Information
 
-### charms.docker
+This Charm is available at <https://jujucharms.com/docker> and contains the 
+open source operations code to deploy on all public clouds in the Juju 
+ecosystem.
 
-This layer also includes a wheelhouse of `charms.docker` a python library to
-make charming with docker, and configuring the docker daemon much easier, and
-syntactically enjoyable. For more information about this library see the
-[charms.docker project](http://github.com/juju-solutions/charms.docker).
+## Docker links
 
-## Credit
-
-This charm contains a slightly modified copy of the script contained at:
-[https://get.docker.io](https://get.docker.io)
-
-The modifications were raising status messages for Juju so its apparent what is
-happening to the end user following along with Juju's extended status feature.
+  - The [Docker homepage](https://www.docker.com/)
+  - Docker [documentation](https://docs.docker.com/) for help with Docker 
+  commands.
+  - Docker [forums](https://forums.docker.com/) for community discussions.
+  - Check the Docker [issue tracker](https://github.com/docker/docker/issues) 
+  for bugs or problems with the Docker software.
+  - The [layer-docker](https://github.com/juju-solutions/layer-docker) is
+  the GitHub repository that contains the reactive code to build this Charm.
+  - Check the layer-docker
+  [issue-tracker](https://github.com/juju-solutions/layer-docker/issues) for
+  bugs or problems related to the Charm.
