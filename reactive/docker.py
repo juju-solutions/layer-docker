@@ -4,11 +4,9 @@ from subprocess import check_call
 from subprocess import check_output
 from subprocess import CalledProcessError
 
+from charmhelpers.core import host
 from charmhelpers.core.hookenv import status_set
 from charmhelpers.core.hookenv import config
-from charmhelpers.core.host import lsb_release
-from charmhelpers.core.host import service_reload
-from charmhelpers.core.host import service_restart
 from charmhelpers.core.templating import render
 from charmhelpers.fetch import apt_install
 from charmhelpers.fetch import apt_update
@@ -18,6 +16,7 @@ from charms.reactive import set_state
 from charms.reactive import when
 from charms.reactive import when_any
 from charms.reactive import when_not
+from charms.reactive.helpers import data_changed
 
 from charms.docker import DockerOpts
 
@@ -79,8 +78,10 @@ def install():
 
 
 @when_any('config.http_proxy.changed', 'config.https_proxy.changed')
-def restart_docker():
-    set_state('docker.restart')
+def proxy_changed():
+    '''The proxy information has changed, render templates and restart the
+    docker daemon.'''
+    recycle_daemon()
 
 
 def install_from_archive_apt():
@@ -105,7 +106,7 @@ def install_from_upstream_apt():
     arch = check_output(split('dpkg --print-architecture'))
     arch = arch.decode('utf-8').rstrip()
     # Get the lsb information as a dictionary.
-    lsb = lsb_release()
+    lsb = host.lsb_release()
     # Ubuntu must be lowercased.
     dist = lsb['DISTRIB_ID'].lower()
     # The codename for the release.
@@ -154,10 +155,35 @@ def signal_workloads_start():
     set_state('docker.available')
 
 
+@when('sdn-plugin.available', 'docker.available')
+def container_sdn_setup(sdn):
+    ''' Receive the information from the SDN plugin, and render the docker
+    engine options. '''
+    status_set('maintenance', 'Configuring container runtime with SDN.')
+    sdn_config = sdn.get_sdn_config()
+    bind_ip = sdn_config['subnet']
+    mtu = sdn_config['mtu']
+    if data_changed('bip', bind_ip) or data_changed('mtu', mtu):
+        opts = DockerOpts()
+        # TODO pop the value if it exists.
+        opts.add('bip', bind_ip)
+        opts.add('mtu', mtu)
+        _reconfigure_docker_for_sdn()
+        set_state('docker.sdn.configured')
+
+
 @when('docker.restart')
+def docker_restart():
+    '''Other layers should be able to trigger a daemon restart. Invoke the
+    method that recycles the docker daemon.'''
+    recycle_daemon()
+    remove_state('docker.restart')
+
+
 def recycle_daemon():
-    ''' Other layers should be able to trigger a daemon restart '''
-    status_set('maintenance', 'Restarting container runtime')
+    '''Render the docker template files and restart the docker daemon on this
+    system.'''
+    status_set('maintenance', 'Restarting container runtime.')
 
     # Re-render our docker daemon template at this time... because we're
     # restarting. And its nice to play nice with others. Isn't that nice?
@@ -165,24 +191,23 @@ def recycle_daemon():
     render('docker.defaults', '/etc/default/docker', {'opts': opts.to_s()})
     render('docker.systemd', '/lib/systemd/system/docker.service', config())
     reload_system_daemons()
-    service_restart('docker')
+    host.service_restart('docker')
 
     if not _probe_runtime_availability():
-        status_set('waiting', 'Container runtime not available')
+        status_set('waiting', 'Container runtime not available.')
         return
-    status_set('active', 'Container runtime available')
-    remove_state('docker.restart')
+    status_set('active', 'Container runtime available.')
 
 
 def reload_system_daemons():
     ''' Reload the system daemons from on-disk configuration changes '''
-    lsb = lsb_release()
+    lsb = host.lsb_release()
     code = lsb['DISTRIB_CODENAME']
     if code != 'trusty':
         command = ['systemctl', 'daemon-reload']
         check_call(command)
     else:
-        service_reload('docker')
+        host.service_reload('docker')
 
 
 def _probe_runtime_availability():
@@ -195,3 +220,25 @@ def _probe_runtime_availability():
         # Remove the availability state if we fail reachability
         remove_state('docker.available')
         return False
+
+
+def _reconfigure_docker_for_sdn():
+    ''' By default docker uses the docker0 bridge for container networking.
+    This method removes the default docker bridge, and reconfigures the
+    DOCKER_OPTS to use the SDN networking bridge. '''
+
+    status_set('maintenance',
+               'Reconfiguring container runtime network bridge.')
+    host.service_stop('docker')
+    apt_install(['bridge-utils'], fatal=True)
+    # cmd = "ifconfig docker0 down"
+    # ifconfig doesn't always work. use native linux networking commands to
+    # mark the bridge as inactive.
+    cmd = ['ip', 'link', 'set', 'docker0', 'down']
+    check_call(cmd)
+
+    cmd = ['brctl', 'delbr', 'docker0']
+    check_call(cmd)
+
+    # Render the config and restart docker.
+    recycle_daemon()
