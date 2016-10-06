@@ -5,6 +5,7 @@ from subprocess import check_output
 from subprocess import CalledProcessError
 
 from charmhelpers.core import host
+from charmhelpers.core import hookenv
 from charmhelpers.core.hookenv import status_set
 from charmhelpers.core.hookenv import config
 from charmhelpers.core.templating import render
@@ -50,7 +51,7 @@ def install():
         set_state('docker.ready')
         return
 
-    status_set('maintenance', 'Installing AUFS and other tools')
+    status_set('maintenance', 'Installing AUFS and other tools.')
     kernel_release = check_output(['uname', '-r']).rstrip()
     packages = [
         'aufs-tools',
@@ -70,7 +71,7 @@ def install():
     render('docker.systemd', '/lib/systemd/system/docker.service', config())
     reload_system_daemons()
 
-    status_set('active', 'Docker installed, cycling for extensions')
+    hookenv.log('Docker installed, setting "docker.ready" state.')
     set_state('docker.ready')
 
     # Make with the adding of the users to the groups
@@ -85,14 +86,14 @@ def proxy_changed():
 
 
 def install_from_archive_apt():
-    status_set('maintenance', 'Installing docker.io from apt archive')
+    status_set('maintenance', 'Installing docker.io from universe.')
     apt_install(['docker.io'], fatal=True)
 
 
 def install_from_upstream_apt():
     ''' Install docker from the apt repository. This is a pyton adaptation of
     the shell script found at https://get.docker.com/ '''
-    status_set('maintenance', 'Installing docker-engine from apt')
+    status_set('maintenance', 'Installing docker-engine from upstream PPA.')
     keyserver = 'hkp://p80.pool.sks-keyservers.net:80'
     key = '58118E89F3A912897C070ADBF76221572C52609D'
     # Enter the server and key in the apt-key management tool.
@@ -132,6 +133,7 @@ def install_from_upstream_apt():
 def enable_grub_cgroups():
     cfg = config()
     if cfg.get('enable-cgroups'):
+        hookenv.log('Calling enable_grub_cgroups.sh and rebooting machine.')
         check_call(['scripts/enable_grub_cgroups.sh'])
         set_state('cgroups.modified')
 
@@ -148,10 +150,10 @@ def signal_workloads_start():
     # to be sufficient
 
     if not _probe_runtime_availability():
-        status_set('waiting', 'Container runtime not available')
+        status_set('waiting', 'Container runtime not available.')
         return
 
-    status_set('active', 'Container runtime available')
+    status_set('active', 'Container runtime available.')
     set_state('docker.available')
 
 
@@ -159,11 +161,11 @@ def signal_workloads_start():
 def container_sdn_setup(sdn):
     ''' Receive the information from the SDN plugin, and render the docker
     engine options. '''
-    status_set('maintenance', 'Configuring container runtime with SDN.')
     sdn_config = sdn.get_sdn_config()
     bind_ip = sdn_config['subnet']
     mtu = sdn_config['mtu']
     if data_changed('bip', bind_ip) or data_changed('mtu', mtu):
+        status_set('maintenance', 'Configuring container runtime with SDN.')
         opts = DockerOpts()
         # TODO pop the value if it exists.
         opts.add('bip', bind_ip)
@@ -183,7 +185,7 @@ def docker_restart():
 def recycle_daemon():
     '''Render the docker template files and restart the docker daemon on this
     system.'''
-    status_set('maintenance', 'Restarting container runtime.')
+    hookenv.log('Restarting docker service.')
 
     # Re-render our docker daemon template at this time... because we're
     # restarting. And its nice to play nice with others. Isn't that nice?
@@ -196,11 +198,11 @@ def recycle_daemon():
     if not _probe_runtime_availability():
         status_set('waiting', 'Container runtime not available.')
         return
-    status_set('active', 'Container runtime available.')
 
 
 def reload_system_daemons():
     ''' Reload the system daemons from on-disk configuration changes '''
+    hookenv.log('Reloading system daemons.')
     lsb = host.lsb_release()
     code = lsb['DISTRIB_CODENAME']
     if code != 'trusty':
@@ -226,7 +228,6 @@ def _reconfigure_docker_for_sdn():
     ''' By default docker uses the docker0 bridge for container networking.
     This method removes the default docker bridge, and reconfigures the
     DOCKER_OPTS to use the SDN networking bridge. '''
-
     status_set('maintenance',
                'Reconfiguring container runtime network bridge.')
     host.service_stop('docker')
