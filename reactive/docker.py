@@ -168,11 +168,8 @@ def container_sdn_setup(sdn):
         # TODO pop the value if it exists.
         opts.add('bip', bind_ip)
         opts.add('mtu', mtu)
-
-        with open('/etc/default/docker', 'w') as stream:
-            stream.write('DOCKER_OPTS="{}"'.format(opts.to_s()))
-    _reconfigure_docker_for_sdn()
-    set_state('sdn.configured')
+        _reconfigure_docker_for_sdn()
+        set_state('docker.sdn.configured')
 
 
 @when('docker.restart')
