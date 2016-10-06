@@ -14,3 +14,6 @@ provides:
   dockerhost:
     interface: dockerhost
     scope: container
+  sdn-plugin:
+    interface: sdn-plugin
+    scope: container

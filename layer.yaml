@@ -1,5 +1,6 @@
 includes: 
   - 'layer:basic'
+  - 'interface:sdn-plugin'
 repo: https://github.com/juju-solutions/layer-docker.git
 defines:
   skip-install:
