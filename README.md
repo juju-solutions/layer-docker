@@ -52,6 +52,13 @@ issues about this.
 
 # Configuration
 
+- docker-opts : Pass through configuration to the docker daemon, such as
+configuring the docker daemon to allow an insecure private registry.
+
+```
+juju config docker docker-opts='--insecure-registry=http://my.insecure.registry:5000'
+```
+
 - enable-cgroups = (false) : To enable memory and swap on system using GNU GRUB 
 (GNU GRand Unified Bootloader) set this value to 'true'. It updates the 
 `/etc/default/grub` file setting `GRUB_CMDLINE_LINUX` to 

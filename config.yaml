@@ -1,4 +1,9 @@
 options:
+  docker-opts:
+    type: string
+    default : ""
+    description: |
+        Extra options to pass to the docker daemon. e.g. --insecure-registry
   enable-cgroups:
     type: boolean
     default: false
