@@ -196,6 +196,14 @@ def docker_restart():
     remove_state('docker.restart')
 
 
+@when('config.changed.docker-opts')
+def docker_template_update():
+    ''' The user has passed configuration that directly effects our running
+    docker engine instance. Re-render the systemd files and recycle the
+    service. '''
+    recycle_daemon()
+
+
 def recycle_daemon():
     '''Render the docker template files and restart the docker daemon on this
     system.'''
@@ -204,7 +212,8 @@ def recycle_daemon():
     # Re-render our docker daemon template at this time... because we're
     # restarting. And its nice to play nice with others. Isn't that nice?
     opts = DockerOpts()
-    render('docker.defaults', '/etc/default/docker', {'opts': opts.to_s()})
+    render('docker.defaults', '/etc/default/docker',
+           {'opts': opts.to_s(), 'manual': config('docker-opts')})
     render('docker.systemd', '/lib/systemd/system/docker.service', config())
     reload_system_daemons()
     host.service_restart('docker')
