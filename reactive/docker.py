@@ -10,6 +10,7 @@ from charmhelpers.core.hookenv import status_set
 from charmhelpers.core.hookenv import config
 from charmhelpers.core.templating import render
 from charmhelpers.fetch import apt_install
+from charmhelpers.fetch import apt_purge
 from charmhelpers.fetch import apt_update
 
 from charms.reactive import remove_state
@@ -76,6 +77,19 @@ def install():
 
     # Make with the adding of the users to the groups
     check_call(['usermod', '-aG', 'docker', 'ubuntu'])
+
+
+@when('config.changed.install_from_upstream')
+def toggle_docker_daemon_source():
+    ''' A disruptive toggleable action which will swap out the installed docker
+    daemon for the configured source. If true, installs the latest available
+    docker from the upstream PPA. Else installs docker from universe. '''
+    host.service_stop('docker')
+    remove_state('docker.ready')
+    remove_state('docker.available')
+
+    apt_purge('docker.io')
+    apt_purge('docker-engine')
 
 
 @when_any('config.http_proxy.changed', 'config.https_proxy.changed')
