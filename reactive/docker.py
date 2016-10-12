@@ -12,6 +12,7 @@ from charmhelpers.core.templating import render
 from charmhelpers.fetch import apt_install
 from charmhelpers.fetch import apt_purge
 from charmhelpers.fetch import apt_update
+from charmhelpers.fetch import filter_installed_packages
 
 from charms.reactive import remove_state
 from charms.reactive import set_state
@@ -79,20 +80,44 @@ def install():
     check_call(['usermod', '-aG', 'docker', 'ubuntu'])
 
 
-@when('config.changed.install_from_upstream')
+@when('config.changed.install_from_upstream', 'docker.ready')
 def toggle_docker_daemon_source():
     ''' A disruptive toggleable action which will swap out the installed docker
     daemon for the configured source. If true, installs the latest available
     docker from the upstream PPA. Else installs docker from universe. '''
     host.service_stop('docker')
-    remove_state('docker.ready')
-    remove_state('docker.available')
 
-    apt_purge('docker.io')
-    apt_purge('docker-engine')
+    # this returns a list of packages not currently installed on the system
+    # based on the parameters input. Use this to check if we have taken
+    # prior action against a docker deb package.
+    packages = filter_installed_packages(['docker.io', 'docker-engine'])
+
+    if 'docker.io' in packages and 'docker_engine' in packages:
+        # we have not reached installation phase, return until
+        # we can reasonably re-test this scenario
+        hookenv.log('Neither docker.io nor docker-engine are installed. Noop.')
+        return
+
+    install_ppa = config('install_from_upstream')
+
+    # Remove the inverse package from what is declared. Only take action if
+    # we meet having a package installed.
+    if install_ppa and 'docker.io' not in packages:
+        hookenv.log('Removing docker.io package.')
+        apt_purge('docker.io')
+        remove_state('docker.ready')
+        remove_state('docker.available')
+    elif not install_ppa and 'docker-engine' not in packages:
+        hookenv.log('Removing docker-engine package.')
+        apt_purge('docker-engine')
+        remove_state('docker.ready')
+        remove_state('docker.available')
+    else:
+        hookenv.log('Not touching packages.')
 
 
 @when_any('config.http_proxy.changed', 'config.https_proxy.changed')
+@when('docker.ready')
 def proxy_changed():
     '''The proxy information has changed, render templates and restart the
     docker daemon.'''
@@ -196,7 +221,7 @@ def docker_restart():
     remove_state('docker.restart')
 
 
-@when('config.changed.docker-opts')
+@when('config.changed.docker-opts', 'docker.ready')
 def docker_template_update():
     ''' The user has passed configuration that directly effects our running
     docker engine instance. Re-render the systemd files and recycle the
