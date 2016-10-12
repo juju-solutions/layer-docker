@@ -79,7 +79,7 @@ def install():
     check_call(['usermod', '-aG', 'docker', 'ubuntu'])
 
 
-@when('config.changed.install_from_upstream')
+@when('config.changed.install_from_upstream', 'docker.ready')
 def toggle_docker_daemon_source():
     ''' A disruptive toggleable action which will swap out the installed docker
     daemon for the configured source. If true, installs the latest available
@@ -196,7 +196,7 @@ def docker_restart():
     remove_state('docker.restart')
 
 
-@when('config.changed.docker-opts')
+@when('config.changed.docker-opts', 'docker.ready')
 def docker_template_update():
     ''' The user has passed configuration that directly effects our running
     docker engine instance. Re-render the systemd files and recycle the
