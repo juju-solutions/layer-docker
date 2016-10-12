@@ -13,7 +13,7 @@ class TestDeployment(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Perform a one time setup for this class deploying the charms."""
-        cls.deployment = amulet.Deployment(series='trusty')
+        cls.deployment = amulet.Deployment(series='xenial')
 
         cls.deployment.add('docker')
 
