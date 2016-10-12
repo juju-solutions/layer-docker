@@ -7,5 +7,7 @@ defines:
     description: Useful when creating docker subordinates, skip the install routine
     type: boolean
     default: false
-excludes:
+exclude:
   - LAYER_README.md
+  - tests/10-deploy.py
+  - tests/tests.yaml
