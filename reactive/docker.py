@@ -85,7 +85,6 @@ def toggle_docker_daemon_source():
     ''' A disruptive toggleable action which will swap out the installed docker
     daemon for the configured source. If true, installs the latest available
     docker from the upstream PPA. Else installs docker from universe. '''
-    host.service_stop('docker')
 
     # this returns a list of packages not currently installed on the system
     # based on the parameters input. Use this to check if we have taken
@@ -103,11 +102,13 @@ def toggle_docker_daemon_source():
     # Remove the inverse package from what is declared. Only take action if
     # we meet having a package installed.
     if install_ppa and 'docker.io' not in packages:
+        host.service_stop('docker')
         hookenv.log('Removing docker.io package.')
         apt_purge('docker.io')
         remove_state('docker.ready')
         remove_state('docker.available')
     elif not install_ppa and 'docker-engine' not in packages:
+        host.service_stop('docker')
         hookenv.log('Removing docker-engine package.')
         apt_purge('docker-engine')
         remove_state('docker.ready')
