@@ -112,6 +112,8 @@ def toggle_docker_daemon_source():
         apt_purge('docker-engine')
         remove_state('docker.ready')
         remove_state('docker.available')
+    else:
+        hookenv.log('Not touching packages.')
 
 
 @when_any('config.http_proxy.changed', 'config.https_proxy.changed')
