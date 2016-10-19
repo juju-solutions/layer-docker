@@ -207,11 +207,40 @@ def container_sdn_setup(sdn):
     if data_changed('bip', bind_ip) or data_changed('mtu', mtu):
         status_set('maintenance', 'Configuring container runtime with SDN.')
         opts = DockerOpts()
-        # TODO pop the value if it exists.
+        # This is a great way to misconfigure a docker daemon. Remove the
+        # existing bind ip and mtu values of the SDN
+        if opts.exists('bip'):
+            opts.pop('bip')
+        if opts.exists('mtu'):
+            opts.pop('mtu')
         opts.add('bip', bind_ip)
         opts.add('mtu', mtu)
-        _reconfigure_docker_for_sdn()
+        _remove_docker_network_bridge()
         set_state('docker.sdn.configured')
+
+
+@when_not('sdn-plugin.available')
+@when('docker.sdn.configured')
+def scrub_sdn_config():
+    ''' If this scenario of states is true, we have likely broken a
+    relationship to our once configured SDN provider. This necessitates a
+    cleanup of the Docker Options for BIP and MTU of the presumed dead SDN
+    interface. '''
+
+    opts = DockerOpts()
+    try:
+        opts.pop('bip')
+        opts.pop('mtu')
+    except KeyError:
+        hookenv.log('Unable to locate bip or mtu in Docker config.')
+        hookenv.log('Assuming no action required, and restarting the daemon.')
+
+    # This method does everything we need to ensure the bridge configuration
+    # has been removed. restarting the daemon restores docker with its default
+    # networking mode.
+    _remove_docker_network_bridge()
+    recycle_daemon()
+    remove_state('docker.sdn.configured')
 
 
 @when('docker.restart')
@@ -273,7 +302,7 @@ def _probe_runtime_availability():
         return False
 
 
-def _reconfigure_docker_for_sdn():
+def _remove_docker_network_bridge():
     ''' By default docker uses the docker0 bridge for container networking.
     This method removes the default docker bridge, and reconfigures the
     DOCKER_OPTS to use the SDN networking bridge. '''
