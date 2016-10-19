@@ -230,10 +230,15 @@ def scrub_sdn_config():
     opts = DockerOpts()
     try:
         opts.pop('bip')
+    except KeyError:
+        hookenv.log('Unable to locate bip in Docker config.')
+        hookenv.log('Assuming no action required.')
+
+    try:
         opts.pop('mtu')
     except KeyError:
-        hookenv.log('Unable to locate bip or mtu in Docker config.')
-        hookenv.log('Assuming no action required, and restarting the daemon.')
+        hookenv.log('Unable to locate mtu in Docker config.')
+        hookenv.log('Assuming no action required.')
 
     # This method does everything we need to ensure the bridge configuration
     # has been removed. restarting the daemon restores docker with its default
