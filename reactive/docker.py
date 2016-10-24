@@ -58,7 +58,7 @@ def install():
     packages = [
         'aufs-tools',
         'git',
-        'linux-image-extra-{0}'.format(kernel_release),
+        'linux-image-extra-{0}'.format(kernel_release.decode('utf-8')),
     ]
     apt_update()
     apt_install(packages)
