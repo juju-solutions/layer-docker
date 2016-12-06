@@ -21,6 +21,7 @@ from charms.reactive import when_any
 from charms.reactive import when_not
 from charms.reactive.helpers import data_changed
 
+from charms.docker import Docker
 from charms.docker import DockerOpts
 
 from charms import layer
@@ -262,6 +263,13 @@ def docker_template_update():
     docker engine instance. Re-render the systemd files and recycle the
     service. '''
     recycle_daemon()
+
+
+@when('docker.ready', 'dockerhost.connected')
+@when_not('dockerhost.configured')
+def dockerhost_connected(dockerhost):
+    '''Transmits the docker url to any subordinates requiring it'''
+    dockerhost.configure(Docker().socket)
 
 
 def recycle_daemon():
