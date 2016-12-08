@@ -1,5 +1,6 @@
 includes: 
   - 'layer:basic'
+  - 'layer:debug'
   - 'interface:sdn-plugin'
   - 'interface:dockerhost'
 repo: https://github.com/juju-solutions/layer-docker.git
