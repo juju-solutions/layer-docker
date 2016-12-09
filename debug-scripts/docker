@@ -1,0 +1,7 @@
+#!/bin/sh
+set -ux
+
+docker version > $DEBUG_SCRIPT_DIR/docker-version
+docker info > $DEBUG_SCRIPT_DIR/docker-info
+docker ps -a > $DEBUG_SCRIPT_DIR/docker-ps
+docker images -a > $DEBUG_SCRIPT_DIR/docker-images
