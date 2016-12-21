@@ -14,7 +14,7 @@ QA, and production environments.
 
 Most people will want to extend this charm to make their Docker container or 
 application deployable from Juju. The 
-[Charm layer](https://gthub.com/juju-solutions/layer-docker) can be extended to
+[Charm layer](https://github.com/juju-solutions/layer-docker) can be extended to
 include docker container along with additional operational code. Please refer
 to the [Charm Layers](https://jujucharms.com/docs/devel/developer-layers)
 documentation on [jujucharms.com](https://jujucharms.com/docs) for more 
