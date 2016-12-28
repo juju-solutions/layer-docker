@@ -1,8 +1,9 @@
 includes: 
   - 'layer:basic'
   - 'layer:debug'
-  - 'interface:sdn-plugin'
   - 'interface:dockerhost'
+  - 'interface:nrpe-external-master'
+  - 'interface:sdn-plugin'
 repo: https://github.com/juju-solutions/layer-docker.git
 defines:
   skip-install:
