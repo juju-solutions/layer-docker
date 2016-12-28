@@ -118,7 +118,8 @@ def toggle_docker_daemon_source():
         hookenv.log('Not touching packages.')
 
 
-@when_any('config.changed.http_proxy', 'config.changed.https_proxy')
+@when_any('config.changed.http_proxy', 'config.changed.https_proxy',
+          'config.changed.no_proxy')
 @when('docker.ready')
 def proxy_changed():
     '''The proxy information has changed, render templates and restart the

@@ -32,6 +32,7 @@ KillMode=process
 {% if http_proxy or https_proxy  %}
 Environment="HTTP_PROXY={{ http_proxy }}"
 Environment="HTTPS_PROXY={{ https_proxy }}"
+Environment="NO_PROXY={{ no_proxy }}"
 {% endif %}
 [Install]
 WantedBy=multi-user.target
