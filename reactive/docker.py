@@ -276,15 +276,16 @@ def dockerhost_connected(dockerhost):
 
 @when('nrpe-external-master.available')
 @when_not('nrpe-external-master.initial-config')
-def initial_nrpe_config(nagios = None):
+def initial_nrpe_config(nagios=None):
     set_state('nrpe-external-master.initial-config')
     update_nrpe_config(nagios)
 
 
 @when('docker.ready')
 @when('nrpe-external-master.available')
-@when_any('config.changed.nagios_context', 'config.changed.nagios_servicegroups')
-def update_nrpe_config(unused = None):
+@when_any('config.changed.nagios_context',
+          'config.changed.nagios_servicegroups')
+def update_nrpe_config(unused=None):
     # List of systemd services that will be checked
     services = ('docker',)
 
