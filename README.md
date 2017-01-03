@@ -77,6 +77,13 @@ variable for Docker containers. Useful in environments with restricted networks
 where a proxy is the only route to the registry to pull images. Setting this
 option forces the Docker daemon to restart.
 
+- no_proxy : The comma-separated list of destinations (domain names or IP
+addresses) that will set the NO_PROXY environment variable for Docker
+containers. Useful in environments with restricted networks where a proxy is
+the only route to the registry to pull images, but you still need to access a
+few domains directly (e.g. an internal, private registry). Setting this option
+forces the Docker daemon to restart.
+
 ## Docker Compose
 
 This Charm also installs the 'docker-compose' python package using pip. So
