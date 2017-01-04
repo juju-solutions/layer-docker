@@ -13,6 +13,7 @@ from charmhelpers.fetch import apt_install
 from charmhelpers.fetch import apt_purge
 from charmhelpers.fetch import apt_update
 from charmhelpers.fetch import filter_installed_packages
+from charmhelpers.contrib.charmsupport import nrpe
 
 from charms.reactive import remove_state
 from charms.reactive import set_state
@@ -271,6 +272,30 @@ def docker_template_update():
 def dockerhost_connected(dockerhost):
     '''Transmits the docker url to any subordinates requiring it'''
     dockerhost.configure(Docker().socket)
+
+
+@when('nrpe-external-master.available')
+@when_not('nrpe-external-master.initial-config')
+def initial_nrpe_config(nagios=None):
+    set_state('nrpe-external-master.initial-config')
+    update_nrpe_config(nagios)
+
+
+@when('docker.ready')
+@when('nrpe-external-master.available')
+@when_any('config.changed.nagios_context',
+          'config.changed.nagios_servicegroups')
+def update_nrpe_config(unused=None):
+    # List of systemd services that will be checked
+    services = ('docker',)
+
+    # The current nrpe-external-master interface doesn't handle a lot of logic,
+    # use the charm-helpers code for now.
+    hostname = nrpe.get_nagios_hostname()
+    current_unit = nrpe.get_nagios_unit_name()
+    nrpe_setup = nrpe.NRPE(hostname=hostname)
+    nrpe.add_init_service_checks(nrpe_setup, services, current_unit)
+    nrpe_setup.write()
 
 
 def recycle_daemon():

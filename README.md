@@ -84,6 +84,14 @@ the only route to the registry to pull images, but you still need to access a
 few domains directly (e.g. an internal, private registry). Setting this option
 forces the Docker daemon to restart.
 
+- nagios_context : A string that will be prepended to instance name to set the
+host name in nagios.If you're running multiple environments with the same
+services in them this allows you to differentiate between them. Used by the
+nrpe subordinate charm.
+
+- nagios_servicegroups : The comma-separated list of servicegroups that the
+generated Nagios checks will belong to.
+
 ## Docker Compose
 
 This Charm also installs the 'docker-compose' python package using pip. So

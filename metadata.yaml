@@ -14,6 +14,9 @@ provides:
   dockerhost:
     interface: dockerhost
     scope: container
+  nrpe-external-master:
+    interface: nrpe-external-master
+    scope: container
   sdn-plugin:
     interface: sdn-plugin
     scope: container
