@@ -1,6 +1,7 @@
 includes: 
   - 'layer:basic'
   - 'layer:debug'
+  - 'layer:nagios'
   - 'interface:dockerhost'
   - 'interface:nrpe-external-master'
   - 'interface:sdn-plugin'
