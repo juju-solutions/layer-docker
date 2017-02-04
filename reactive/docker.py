@@ -275,9 +275,9 @@ def dockerhost_connected(dockerhost):
 
 
 @when('nrpe-external-master.available')
-@when_not('nrpe-external-master.initial-config')
+@when_not('nrpe-external-master.docker.initial-config')
 def initial_nrpe_config(nagios=None):
-    set_state('nrpe-external-master.initial-config')
+    set_state('nrpe-external-master.docker.initial-config')
     update_nrpe_config(nagios)
 
 
@@ -296,6 +296,23 @@ def update_nrpe_config(unused=None):
     nrpe_setup = nrpe.NRPE(hostname=hostname)
     nrpe.add_init_service_checks(nrpe_setup, services, current_unit)
     nrpe_setup.write()
+
+
+@when_not('nrpe-external-master.available')
+@when('nrpe-external-master.docker.initial-config')
+def remove_nrpe_config(nagios=None):
+    remove_state('nrpe-external-master.docker.initial-config')
+
+    # List of systemd services for which the checks will be removed
+    services = ('docker',)
+
+    # The current nrpe-external-master interface doesn't handle a lot of logic,
+    # use the charm-helpers code for now.
+    hostname = nrpe.get_nagios_hostname()
+    nrpe_setup = nrpe.NRPE(hostname=hostname, primary=False)
+
+    for service in services:
+        nrpe_setup.remove_check(shortname=service)
 
 
 def recycle_daemon():
