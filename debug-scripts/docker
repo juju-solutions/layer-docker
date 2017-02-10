@@ -5,3 +5,8 @@ docker version > $DEBUG_SCRIPT_DIR/docker-version
 docker info > $DEBUG_SCRIPT_DIR/docker-info
 docker ps -a > $DEBUG_SCRIPT_DIR/docker-ps
 docker images -a > $DEBUG_SCRIPT_DIR/docker-images
+
+mkdir $DEBUG_SCRIPT_DIR/container-logs
+for container in $(docker ps -a --format '{{.Names}}'); do
+  docker logs $container > $DEBUG_SCRIPT_DIR/container-logs/$container 2>&1
+done
