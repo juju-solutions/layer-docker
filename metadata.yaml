@@ -10,6 +10,8 @@ tags:
   - containers
   - layer
 subordinate: false
+series:
+  - xenial
 provides:
   dockerhost:
     interface: dockerhost
