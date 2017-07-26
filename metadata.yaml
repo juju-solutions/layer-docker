@@ -1,6 +1,10 @@
 name: docker
 summary: A Juju charm layer to use Docker containers in charms.
 maintainers:
+    - Tim Van Steenburgh <tim.van.steenburgh@canonical.com>
+    - George Kraft <george.kraft@canonical.com>
+    - Rye Terrell <rye.terrell@canonical.com>
+    - Konstantinos Tsakalozos <kos.tsakalozos@canonical.com>
     - Charles Butler <charles.butler@canonical.com>
     - Matthew Bruzek <matthew.bruzek@canonical.com>
 description: |
