@@ -12,6 +12,7 @@ from charmhelpers.core.templating import render
 from charmhelpers.fetch import apt_install
 from charmhelpers.fetch import apt_purge
 from charmhelpers.fetch import apt_update
+from charmhelpers.fetch import apt_hold
 from charmhelpers.fetch import filter_installed_packages
 from charmhelpers.contrib.charmsupport import nrpe
 
@@ -169,6 +170,8 @@ def install_from_upstream_apt():
     apt_update(fatal=True)
     # apt-get install -y -q docker-engine
     apt_install(['docker-engine'], fatal=True)
+    apt_hold(['docker-engine'])
+
 
 
 @when('docker.ready')
