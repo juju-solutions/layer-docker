@@ -12,9 +12,11 @@ from charmhelpers.core.templating import render
 from charmhelpers.fetch import apt_install
 from charmhelpers.fetch import apt_purge
 from charmhelpers.fetch import apt_update
+from charmhelpers.fetch import apt_hold
 from charmhelpers.fetch import filter_installed_packages
 from charmhelpers.contrib.charmsupport import nrpe
 
+from charms.reactive import hook
 from charms.reactive import remove_state
 from charms.reactive import set_state
 from charms.reactive import when
@@ -40,6 +42,14 @@ from charms import layer
 
 # Be sure you bind to it appropriately in your workload layer and
 # react to the proper event.
+
+
+@hook('upgrade-charm')
+def upgrade():
+    apt_hold(['docker-engine'])
+    apt_hold(['docker.io'])
+    hookenv.log('Holding docker-engine and docker.io packages' +
+                ' at current revision.')
 
 
 @when_not('docker.ready')
@@ -74,6 +84,11 @@ def install():
     render('docker.defaults', '/etc/default/docker', {'opts': opts.to_s()})
     render('docker.systemd', '/lib/systemd/system/docker.service', config())
     reload_system_daemons()
+
+    apt_hold(['docker-engine'])
+    apt_hold(['docker.io'])
+    hookenv.log('Holding docker-engine and docker.io packages' +
+                ' at current revision.')
 
     hookenv.log('Docker installed, setting "docker.ready" state.')
     set_state('docker.ready')
