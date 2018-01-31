@@ -337,8 +337,11 @@ class ConfigError(Exception):
 
 def validate_config():
     '''Check that config is valid.'''
-    if len(config('no_proxy')) + len("Environment=\"NO_PROXY=\"\"") > 2048:
-        raise ConfigError('no_proxy longer than 2023 characters.')
+    MAX_LINE = 2048
+    line_prefix_len = len("Environment=\"NO_PROXY=\"\"")
+    remain_len = MAX_LINE - line_prefix_len
+    if len(config('no_proxy')) > remain_len:
+        raise ConfigError('no_proxy longer than {} characters.'.format(remain_len))
 
 
 def recycle_daemon():
