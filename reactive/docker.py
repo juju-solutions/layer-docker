@@ -341,7 +341,7 @@ def validate_config():
     line_prefix_len = len("Environment=\"NO_PROXY=\"\"")
     remain_len = MAX_LINE - line_prefix_len
     if len(config('no_proxy')) > remain_len:
-        raise ConfigError('no_proxy longer than {} characters.'.format(remain_len))
+        raise ConfigError('no_proxy longer than {} chars.'.format(remain_len))
 
 
 def recycle_daemon():
