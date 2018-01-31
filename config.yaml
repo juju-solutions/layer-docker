@@ -36,4 +36,4 @@ options:
     description: |
         Comma-separated list of destinations (either domain names or IP
         addresses) that should be directly accessed, by opposition of going
-        through the proxy defined above.
+        through the proxy defined above. Must be less than 2023 characters long

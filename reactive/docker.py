@@ -80,6 +80,7 @@ def install():
     else:
         install_from_archive_apt()
 
+    validate_config()
     opts = DockerOpts()
     render('docker.defaults', '/etc/default/docker', {'opts': opts.to_s()})
     render('docker.systemd', '/lib/systemd/system/docker.service', config())
@@ -330,11 +331,24 @@ def remove_nrpe_config(nagios=None):
         nrpe_setup.remove_check(shortname=service)
 
 
+class ConfigError(Exception):
+    pass
+
+
+def validate_config():
+    '''Check that config is valid.'''
+    MAX_LINE = 2048
+    line_prefix_len = len("Environment=\"NO_PROXY=\"\"")
+    remain_len = MAX_LINE - line_prefix_len
+    if len(config('no_proxy')) > remain_len:
+        raise ConfigError('no_proxy longer than {} chars.'.format(remain_len))
+
+
 def recycle_daemon():
     '''Render the docker template files and restart the docker daemon on this
     system.'''
+    validate_config()
     hookenv.log('Restarting docker service.')
-
     # Re-render our docker daemon template at this time... because we're
     # restarting. And its nice to play nice with others. Isn't that nice?
     opts = DockerOpts()
