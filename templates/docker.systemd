@@ -10,11 +10,7 @@ Type=notify
 # exists and systemd currently does not support the cgroup feature set required
 # for containers run by docker
 EnvironmentFile=-/etc/default/docker
-{% if install_from_upstream %}
 ExecStart=/usr/bin/dockerd -H fd:// $DOCKER_OPTS
-{% else %}
-ExecStart=/usr/bin/docker daemon -H fd:// $DOCKER_OPTS
-{% endif %}
 ExecReload=/bin/kill -s HUP $MAINPID
 # Having non-zero Limit*s causes performance problems due to accounting overhead
 # in the kernel. We recommend using cgroups to do container-local accounting.

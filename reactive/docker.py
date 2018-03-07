@@ -13,6 +13,7 @@ from charmhelpers.fetch import apt_install
 from charmhelpers.fetch import apt_purge
 from charmhelpers.fetch import apt_update
 from charmhelpers.fetch import apt_hold
+from charmhelpers.fetch import apt_unhold
 from charmhelpers.fetch import filter_installed_packages
 from charmhelpers.contrib.charmsupport import nrpe
 
@@ -43,22 +44,36 @@ from charms import layer
 # Be sure you bind to it appropriately in your workload layer and
 # react to the proper event.
 
+dockerpackages = {'default':['docker.io'], 'upstream':['docker-engine'], 'nvidia':['docker-ce','nvidia-docker2','nvidia-container-runtime','nvidia-container-runtime-hook']}
+
+def holdall():
+    for k in dockerpackages.keys():
+        apt_hold(dockerpackages[k])
+
+def unholdall():
+    for k in dockerpackages.keys():
+        apt_unhold(dockerpackages[k])
+        #apt_unhold(k)
 
 @hook('upgrade-charm')
 def upgrade():
-    apt_hold(['docker-engine'])
-    apt_hold(['docker.io'])
-    hookenv.log('Holding docker-engine and docker.io packages' +
+    holdall()
+    hookenv.log('Holding docker packages' +
                 ' at current revision.')
 
 
 @when_not('docker.ready')
 def install():
     ''' Install the docker daemon, and supporting tooling '''
-    # Often when building layer-docker based subordinates, you dont need to
-    # incur the overhead of installing docker. This tuneable layer option
-    # allows you to disable the exec of that install routine, and instead short
-    # circuit immediately to docker.available, so you can charm away!
+
+    ## switching runtimes causes a reinstall so remove any holds that may be leftover
+
+    unholdall()
+
+    ## Often when building layer-docker based subordinates, you dont need to
+    ## incur the overhead of installing docker. This tuneable layer option
+    ## allows you to disable the exec of that install routine, and instead short
+    ## circuit immediately to docker.available, so you can charm away!
     layer_opts = layer.options('docker')
     if layer_opts['skip-install']:
         set_state('docker.available')
@@ -74,23 +89,28 @@ def install():
     ]
     apt_update()
     apt_install(packages)
+
     # Install docker-engine from apt.
-    if config('install_from_upstream'):
+    if config('docker_runtime') == "upstream" or config('install_from_upstream'):
         install_from_upstream_apt()
+    elif config('docker_runtime') == "nvidia":
+        install_from_nvidia_apt()
     else:
         install_from_archive_apt()
 
+    hookenv.log('pre docker_runtime={0}'.format(config('docker_runtime')))
     validate_config()
     opts = DockerOpts()
-    render('docker.defaults', '/etc/default/docker', {'opts': opts.to_s()})
+    hookenv.log('post docker_runtime={0}'.format(config('docker_runtime')))
+    render('docker.defaults', '/etc/default/docker', {'opts': opts.to_s(),'docker_runtime': config('docker_runtime') })
     render('docker.systemd', '/lib/systemd/system/docker.service', config())
     reload_system_daemons()
 
-    apt_hold(['docker-engine'])
-    apt_hold(['docker.io'])
+    holdall()
     hookenv.log('Holding docker-engine and docker.io packages' +
                 ' at current revision.')
 
+    host.service_restart('docker')
     hookenv.log('Docker installed, setting "docker.ready" state.')
     set_state('docker.ready')
 
@@ -98,41 +118,58 @@ def install():
     check_call(['usermod', '-aG', 'docker', 'ubuntu'])
 
 
-@when('config.changed.install_from_upstream', 'docker.ready')
+#@when('config.changed.install_from_upstream', 'docker.ready')
+@when('config.changed.docker_runtime', 'docker.ready')
 def toggle_docker_daemon_source():
-    ''' A disruptive toggleable action which will swap out the installed docker
+    ''' A disruptive 
     daemon for the configured source. If true, installs the latest available
     docker from the upstream PPA. Else installs docker from universe. '''
 
-    # this returns a list of packages not currently installed on the system
-    # based on the parameters input. Use this to check if we have taken
-    # prior action against a docker deb package.
-    packages = filter_installed_packages(['docker.io', 'docker-engine'])
+    ## this returns a list of packages not currently installed on the system
+    ## based on the parameters input. Use this to check if we have taken
+    ## prior action against a docker deb package.
+    installed=[]
+    for k in dockerpackages.keys():
+        packages = filter_installed_packages(dockerpackages[k])
+        if packages == []:
+            installed.append(k)
 
-    if 'docker.io' in packages and 'docker_engine' in packages:
-        # we have not reached installation phase, return until
-        # we can reasonably re-test this scenario
-        hookenv.log('Neither docker.io nor docker-engine are installed. Noop.')
+    ## none of the docker packages are installed
+    if len(installed) == 0:
+        ## we have not reached installation phase, return until
+        ## we can reasonably re-test this scenario
+        hookenv.log('No supported docker runtime is installed. Noop.')
         return
 
-    install_ppa = config('install_from_upstream')
+    runtime = config('docker_runtime')
+    if not dockerpackages.get(runtime):
+        if config('install_from_upstream'):
+            runtime = 'upstream'
+        else:
+            runtime = 'default'
 
-    # Remove the inverse package from what is declared. Only take action if
-    # we meet having a package installed.
-    if install_ppa and 'docker.io' not in packages:
+    hookenv.log("runtime to install %s"%runtime)
+
+    #### workaround https://bugs.launchpad.net/ubuntu/+source/docker.io/+bug/1724353
+    if os.path.exists('/var/lib/docker/nuke-graph-directory.sh'):
+        hookenv.log('workaround https://bugs.launchpad.net/ubuntu/+source/docker.io/+bug/1724353')
+        cmd="sed -i '1i#!/bin/bash' /var/lib/docker/nuke-graph-directory.sh"
+        check_call(split(cmd))
+
+    ## the package we want is not installed
+    ## so we need to uninstall either of the others that are installed
+    ## and reset the state to forcea reinstall
+    if runtime not in installed:
         host.service_stop('docker')
-        hookenv.log('Removing docker.io package.')
-        apt_purge('docker.io')
-        remove_state('docker.ready')
-        remove_state('docker.available')
-    elif not install_ppa and 'docker-engine' not in packages:
-        host.service_stop('docker')
-        hookenv.log('Removing docker-engine package.')
-        apt_purge('docker-engine')
-        remove_state('docker.ready')
-        remove_state('docker.available')
+        for k in dockerpackages.keys():
+            hookenv.log("Removing package(s): %s"%",".join(dockerpackages[k]))
+            apt_unhold(dockerpackages[k])
+            apt_purge(dockerpackages[k])
+            remove_state('docker.ready')
+            remove_state('docker.available')
     else:
         hookenv.log('Not touching packages.')
+
 
 
 @when_any('config.changed.http_proxy', 'config.changed.https_proxy',
@@ -185,6 +222,46 @@ def install_from_upstream_apt():
     apt_update(fatal=True)
     # apt-get install -y -q docker-engine
     apt_install(['docker-engine'], fatal=True)
+
+
+def install_from_nvidia_apt():
+    ''' Install cuda docker from the nvidia apt repository. This is a pyton adaptation of
+    the shell script found at https://get.docker.com/ '''
+    status_set('maintenance', 'Installing docker-engine from Nvidia PPA.')
+
+    ## Get the server and key in the apt-key management tool.
+    keyserver = 'hkp://p80.pool.sks-keyservers.net:80'
+    for key in ["C95B321B61E88C1809C4F759DDCAE044F796ECB0","9DC858229FC7DD38854AE2D88D81803C0EBFCD88"]:
+        cmd = 'apt-key adv --keyserver {0} --recv-keys {1}'.format(keyserver, key)
+        check_call(split(cmd))
+
+
+    ## Get the package architecture (amd64), not the machine hardware (x86_64)
+    arch = check_output(split('dpkg --print-architecture'))
+    arch = arch.decode('utf-8').rstrip()
+    ## Get the lsb information as a dictionary.
+    lsb = host.lsb_release()
+    code = lsb['DISTRIB_CODENAME']
+    release = lsb['DISTRIB_RELEASE']
+    docker_url = "https://download.docker.com/linux/ubuntu"
+    repo = 'stable'
+
+    deb=list()
+    deb.append('deb [arch={0}] {1} {2} {3}'.format(arch, docker_url, code, repo))
+    deb.append('deb https://nvidia.github.io/libnvidia-container/ubuntu{0}/{1} /'.format(release,arch))
+    deb.append('deb https://nvidia.github.io/nvidia-container-runtime/ubuntu{0}/{1} /'.format(release,arch))
+    deb.append('deb https://nvidia.github.io/nvidia-docker/ubuntu{0}/{1} /'.format(release,arch))
+
+    ## mkdir -p /etc/apt/sources.list.d
+    if not os.path.isdir('/etc/apt/sources.list.d'):
+        os.makedirs('/etc/apt/sources.list.d')
+    ## Write the docker source file to the apt sources.list.d directory.
+    with(open('/etc/apt/sources.list.d/docker.list', 'w+')) as stream:
+        stream.write("\n".join(deb))
+
+    apt_update(fatal=True)
+    ## apt-get install -y docker-ce nvidia-docker2
+    apt_install(['docker-ce','nvidia-docker2'], fatal=True)
 
 
 @when('docker.ready')
@@ -353,7 +430,7 @@ def recycle_daemon():
     # restarting. And its nice to play nice with others. Isn't that nice?
     opts = DockerOpts()
     render('docker.defaults', '/etc/default/docker',
-           {'opts': opts.to_s(), 'manual': config('docker-opts')})
+            {'opts': opts.to_s(), 'manual': config('docker-opts'),'docker_runtime': config('docker_runtime') })
     render('docker.systemd', '/lib/systemd/system/docker.service', config())
     reload_system_daemons()
     host.service_restart('docker')

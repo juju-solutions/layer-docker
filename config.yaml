@@ -15,7 +15,12 @@ options:
     type: boolean
     default: false
     description: |
-      Toggle installation from ubuntu archive vs the docker PPA
+      Toggle installation from ubuntu archive vs the docker PPA (DEPRECATED please use docker_runtime instead)
+  docker_runtime:
+    type: string
+    default: ""
+    description: |
+      docker runtime to install valid values are "upstream" (docker PPA), "nvidia" (nvidia PPA), any other value will install from ubuntu archive
   http_proxy:
      type: string
      default: ""
