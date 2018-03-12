@@ -44,7 +44,7 @@ from charms import layer
 # Be sure you bind to it appropriately in your workload layer and
 # react to the proper event.
 
-dockerpackages = {'default': ['docker.io'],
+dockerpackages = {'apt': ['docker.io'],
                   'upstream': ['docker-engine'],
                   'nvidia': ['docker-ce',
                              'nvidia-docker2',
@@ -67,6 +67,23 @@ def upgrade():
     holdall()
     hookenv.log('Holding docker packages' +
                 ' at current revision.')
+
+
+def determineAptSource():
+    docker_runtime = config('docker_runtime')
+
+    if config('install_from_upstream'):
+        docker_runtime = 'upstream'
+
+    if docker_runtime == "auto":
+        out = check_output(['lspci', '-nnk']).rstrip()
+        if out.decode('utf-8').lower().count("nvidia") > 0:
+            docker_runtime = "nvidia"
+        else:
+            docker_runtime = "apt"
+
+    hookenv.log('Setting runtime to {0}'.format(docker_runtime))
+    return docker_runtime
 
 
 @when_not('docker.ready')
@@ -98,20 +115,21 @@ def install():
     apt_install(packages)
 
     # Install docker-engine from apt.
-    if config('docker_runtime') == "upstream" \
-            or config('install_from_upstream'):
+    runtime = determineAptSource()
+    if runtime == "upstream":
         install_from_upstream_apt()
-    elif config('docker_runtime') == "nvidia":
+    elif runtime == "nvidia":
         install_from_nvidia_apt()
-    else:
+    elif runtime == "apt":
         install_from_archive_apt()
+    else:
+        hookenv.log('unknown runtime {0}'.format(runtime))
+        return False
 
-    hookenv.log('pre docker_runtime={0}'.format(config('docker_runtime')))
     validate_config()
     opts = DockerOpts()
-    hookenv.log('post docker_runtime={0}'.format(config('docker_runtime')))
     render('docker.defaults', '/etc/default/docker',
-           {'opts': opts.to_s(), 'docker_runtime': config('docker_runtime')})
+           {'opts': opts.to_s(), 'docker_runtime': runtime})
     render('docker.systemd', '/lib/systemd/system/docker.service', config())
     reload_system_daemons()
 
@@ -128,11 +146,15 @@ def install():
 
 
 @when('config.changed.install_from_upstream', 'docker.ready')
+def toggle_install_from_upstream():
+    toggle_docker_daemon_source()
+
+
 @when('config.changed.docker_runtime', 'docker.ready')
 def toggle_docker_daemon_source():
-    ''' A disruptive
-    daemon for the configured source. If true, installs the latest available
-    docker from the upstream PPA. Else installs docker from universe. '''
+    ''' A disruptive reaction to config changing that will remove the existing
+    docker daemon and install the latest available deb from the upstream PPA,
+    Nvidia PPA, or Universe depending on the docker_runtime setting. '''
 
     # this returns a list of packages not currently installed on the system
     # based on the parameters input. Use this to check if we have taken
@@ -150,12 +172,10 @@ def toggle_docker_daemon_source():
         hookenv.log('No supported docker runtime is installed. Noop.')
         return
 
-    runtime = config('docker_runtime')
+    runtime = determineAptSource()
     if not dockerpackages.get(runtime):
-        if config('install_from_upstream'):
-            runtime = 'upstream'
-        else:
-            runtime = 'default'
+        hookenv.log('unknown runtime {0}'.format(runtime))
+        return False
 
     hookenv.log('runtime to install {0}'.format(runtime))
 
@@ -453,10 +473,11 @@ def recycle_daemon():
     # Re-render our docker daemon template at this time... because we're
     # restarting. And its nice to play nice with others. Isn't that nice?
     opts = DockerOpts()
+    runtime = determineAptSource()
     render('docker.defaults', '/etc/default/docker',
            {'opts': opts.to_s(),
             'manual': config('docker-opts'),
-            'docker_runtime': config('docker_runtime')})
+            'docker_runtime': runtime})
     render('docker.systemd', '/lib/systemd/system/docker.service', config())
     reload_system_daemons()
     host.service_restart('docker')

@@ -20,7 +20,7 @@ options:
     type: string
     default: ""
     description: |
-      docker runtime to install valid values are "upstream" (docker PPA), "nvidia" (nvidia PPA), any other value will install from ubuntu archive
+      docker runtime to install valid values are "upstream" (docker PPA), "nvidia" (nvidia PPA), "apt" install from ubuntu archive, or auto
   http_proxy:
      type: string
      default: ""
