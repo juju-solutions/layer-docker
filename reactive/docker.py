@@ -198,6 +198,7 @@ def toggle_docker_daemon_source():
             apt_purge(dockerpackages[k])
             remove_state('docker.ready')
             remove_state('docker.available')
+            remove_state('docker-nvidia.ready')
     else:
         hookenv.log('Not touching packages.')
 
@@ -306,6 +307,7 @@ def install_from_nvidia_apt():
         check_call(['modprobe', 'nvidia'])
     except:
         hookenv.log('not reloading nvidia kmod')
+    set_state('docker-nvidia.ready')
 
 
 @when('docker.ready')
