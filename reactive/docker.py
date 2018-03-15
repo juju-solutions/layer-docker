@@ -300,12 +300,12 @@ def install_from_nvidia_apt():
         try:
             hookenv.log('rmmod {0}'.format(m))
             check_call(['rmmod', m])
-        except:
+        except CalledProcessError:
             hookenv.log('not unloading kmod {0}'.format(m))
 
     try:
         check_call(['modprobe', 'nvidia'])
-    except:
+    except CalledProcessError:
         hookenv.log('not reloading nvidia kmod')
     set_state('docker-nvidia.ready')
 
