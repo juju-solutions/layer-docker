@@ -23,8 +23,7 @@ class TestDeployment(unittest.TestCase):
         except amulet.helpers.TimeoutError:
             message = "The deploy did not setup in {0} seconds".format(seconds)
             amulet.raise_status(amulet.SKIP, msg=message)
-        except:
-            raise
+
         cls.unit = cls.deployment.sentry['docker'][0]
 
     def test_docker_binary(self):
