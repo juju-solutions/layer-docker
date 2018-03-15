@@ -18,7 +18,7 @@ options:
       Toggle installation from ubuntu archive vs the docker PPA (DEPRECATED please use docker_runtime instead)
   docker_runtime:
     type: string
-    default: ""
+    default: "auto"
     description: |
       docker runtime to install valid values are "upstream" (docker PPA), "nvidia" (nvidia PPA), "apt" install from ubuntu archive, or auto
   http_proxy:
