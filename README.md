@@ -20,6 +20,19 @@ to the [Charm Layers](https://jujucharms.com/docs/devel/developer-layers)
 documentation on [jujucharms.com](https://jujucharms.com/docs) for more 
 information.
 
+# States
+
+The following states are set by this layer:
+
+* `cuda.supported`
+
+  This state is set when supported GPU hardware is detected.
+
+* `cuda.installed`
+
+  This state is set once CUDA-related packages are installed and configured.
+
+
 ## Using the Docker Charm
 
 Docker does not require anything by default so you can deploy the Charm by the 
