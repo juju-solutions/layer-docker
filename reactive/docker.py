@@ -79,7 +79,8 @@ def determineAptSource():
 
     if docker_runtime == "auto":
         out = check_output(['lspci', '-nnk']).rstrip()
-        if arch() == 'amd64' and out.decode('utf-8').lower().count("nvidia") > 0:
+        if arch() == 'amd64' \
+                and out.decode('utf-8').lower().count("nvidia") > 0:
             docker_runtime = "nvidia"
         else:
             docker_runtime = "apt"
@@ -241,7 +242,7 @@ def install_from_upstream_apt():
     # repo can be: main, testing or experimental
     repo = 'main'
     # deb [arch=amd64] https://apt.dockerproject.org/repo ubuntu-xenial main
-    deb =list()
+    deb = list()
     deb.append('deb [arch={0}] {1}/repo {2}-{3} {4}'.format(
         architecture, apt_url, dist, code, repo))
     write_docker_sources(deb)
@@ -270,11 +271,13 @@ def install_from_nvidia_apt():
     repo = 'stable'
 
     deb = list()
-    deb.append('deb [arch={0}] {1} {2} {3}'.format(architecture, dockurl, code, repo))
+    deb.append('deb [arch={0}] {1} {2} {3}'.format(architecture,
+                                                   dockurl, code, repo))
     for i in ['libnvidia-container',
               'nvidia-container-runtime',
               'nvidia-docker']:
-        deb.append('deb {0}/{1}/ubuntu{2}/{3} /'.format(nvidurl, i, rel, architecture))
+        deb.append('deb {0}/{1}/ubuntu{2}/{3} /'.format(nvidurl,
+                                                        i, rel, architecture))
 
     write_docker_sources(deb)
 
@@ -285,13 +288,15 @@ def install_from_nvidia_apt():
 
     docker_ce = hookenv.config('docker-ce-package')
     nvidia_docker2 = hookenv.config('nvidia-docker-package')
-    nvidia_container_runtime = hookenv.config('nvidia-container-runtime-package')
-    apt_install(['cuda-drivers', docker_ce, nvidia_docker2, nvidia_container_runtime], fatal=True)
+    nv_container_runtime = hookenv.config('nvidia-container-runtime-package')
+    apt_install(['cuda-drivers', docker_ce, nvidia_docker2,
+                 nv_container_runtime], fatal=True)
 
 
 def install_cuda_drivers_repo(architecture, rel, ubuntu):
-    ''' Install cuda drivers this is xenial only. We want to install cuda-drivers only
-    this means that the cuda version plays no role. Any repo will do. '''
+    ''' Install cuda drivers this is xenial only.
+     We want to install cuda-drivers only this means that the
+     cuda version plays no role. Any repo will do. '''
     architecture = arch()
     # Get the lsb information as a dictionary.
     lsb = host.lsb_release()
@@ -306,7 +311,8 @@ def install_cuda_drivers_repo(architecture, rel, ubuntu):
     check_call(split(cmd))
     cuda_repo_version = config('cuda_repo')
     cuda_repo_pkg = 'cuda-repo-{}_{}_{}.deb'.format(distribution,
-                                                    cuda_repo_version, architecture)
+                                                    cuda_repo_version,
+                                                    architecture)
     repo_url = 'https://{}/{}'.format(repo_path, cuda_repo_pkg)
     r = requests.get(repo_url)
     r.raise_for_status()
@@ -565,7 +571,8 @@ def arch():
     '''Return the package architecture as a string.'''
     # Get the package architecture for this system.
     if not arch.architecture:
-        arch.architecture = check_output(['dpkg', '--print-architecture']).rstrip()
+        arch.architecture = check_output(['dpkg',
+                                          '--print-architecture']).rstrip()
         arch.architecture = arch.architecture.decode('utf-8')
     return arch.architecture
-arch.architecture = None
+arch.architecture = None # noqa: E261, E305
