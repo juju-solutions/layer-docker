@@ -119,14 +119,14 @@ def install():
 
     # Install docker-engine from apt.
     runtime = determineAptSource()
-    remove_state('cuda.supported')
-    remove_state('cuda.installed')
+    remove_state('nvidia-docker.supported')
+    remove_state('nvidia-docker.installed')
     if runtime == "upstream":
         install_from_upstream_apt()
     elif runtime == "nvidia":
-        set_state('cuda.supported')
+        set_state('nvidia-docker.supported')
         install_from_nvidia_apt()
-        set_state('cuda.installed')
+        set_state('nvidia-docker.installed')
     elif runtime == "apt":
         install_from_archive_apt()
     else:
