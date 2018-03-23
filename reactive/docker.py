@@ -297,11 +297,6 @@ def install_cuda_drivers_repo(architecture, rel, ubuntu):
     ''' Install cuda drivers this is xenial only.
      We want to install cuda-drivers only this means that the
      cuda version plays no role. Any repo will do. '''
-    architecture = arch()
-    # Get the lsb information as a dictionary.
-    lsb = host.lsb_release()
-    rel = lsb['DISTRIB_RELEASE']
-    ubuntu = str(lsb['DISTRIB_ID']).lower()
     key_file = '7fa2af80.pub'
     # distribution should be something like ubuntu1604
     distribution = '{}{}'.format(ubuntu, str(rel).replace('.', ''))
