@@ -24,11 +24,11 @@ information.
 
 The following states are set by this layer:
 
-* `cuda.supported`
+* `nvidia-docker.supported`
 
   This state is set when supported GPU hardware is detected.
 
-* `cuda.installed`
+* `nvidia-docker.installed`
 
   This state is set once CUDA-related packages are installed and configured.
 
