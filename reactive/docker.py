@@ -1,8 +1,10 @@
 import os
+import requests
 from shlex import split
 from subprocess import check_call
 from subprocess import check_output
 from subprocess import CalledProcessError
+
 
 from charmhelpers.core import host
 from charmhelpers.core import hookenv
@@ -77,7 +79,8 @@ def determineAptSource():
 
     if docker_runtime == "auto":
         out = check_output(['lspci', '-nnk']).rstrip()
-        if out.decode('utf-8').lower().count("nvidia") > 0:
+        if arch() == 'amd64' \
+                and out.decode('utf-8').lower().count("nvidia") > 0:
             docker_runtime = "nvidia"
         else:
             docker_runtime = "apt"
@@ -116,10 +119,14 @@ def install():
 
     # Install docker-engine from apt.
     runtime = determineAptSource()
+    remove_state('nvidia-docker.supported')
+    remove_state('nvidia-docker.installed')
     if runtime == "upstream":
         install_from_upstream_apt()
     elif runtime == "nvidia":
+        set_state('nvidia-docker.supported')
         install_from_nvidia_apt()
+        set_state('nvidia-docker.installed')
     elif runtime == "apt":
         install_from_archive_apt()
     else:
@@ -220,18 +227,12 @@ def install_from_upstream_apt():
     ''' Install docker from the apt repository. This is a pyton adaptation of
     the shell script found at https://get.docker.com/ '''
     status_set('maintenance', 'Installing docker-engine from upstream PPA.')
-    keyserver = 'hkp://p80.pool.sks-keyservers.net:80'
     key = '58118E89F3A912897C070ADBF76221572C52609D'
-    # Enter the server and key in the apt-key management tool.
-    cmd = 'apt-key adv --keyserver {0} --recv-keys {1}'.format(keyserver, key)
-    # "apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80
-    # --recv-keys 58118E89F3A912897C070ADBF76221572C52609D"
-    check_call(split(cmd))
+    add_apt_key(key)
     # The url to the server that contains the docker apt packages.
     apt_url = 'https://apt.dockerproject.org'
     # Get the package architecture (amd64), not the machine hardware (x86_64)
-    arch = check_output(split('dpkg --print-architecture'))
-    arch = arch.decode('utf-8').rstrip()
+    architecture = arch()
     # Get the lsb information as a dictionary.
     lsb = host.lsb_release()
     # Ubuntu must be lowercased.
@@ -241,14 +242,10 @@ def install_from_upstream_apt():
     # repo can be: main, testing or experimental
     repo = 'main'
     # deb [arch=amd64] https://apt.dockerproject.org/repo ubuntu-xenial main
-    deb = 'deb [arch={0}] {1}/repo {2}-{3} {4}'.format(
-            arch, apt_url, dist, code, repo)
-    # mkdir -p /etc/apt/sources.list.d
-    if not os.path.isdir('/etc/apt/sources.list.d'):
-        os.makedirs('/etc/apt/sources.list.d')
-    # Write the docker source file to the apt sources.list.d directory.
-    with(open('/etc/apt/sources.list.d/docker.list', 'w+')) as stream:
-        stream.write(deb)
+    deb = list()
+    deb.append('deb [arch={0}] {1}/repo {2}-{3} {4}'.format(
+        architecture, apt_url, dist, code, repo))
+    write_docker_sources(deb)
     apt_update(fatal=True)
     # apt-get install -y -q docker-engine
     apt_install(['docker-engine'], fatal=True)
@@ -257,32 +254,73 @@ def install_from_upstream_apt():
 def install_from_nvidia_apt():
     ''' Install cuda docker from the nvidia apt repository. '''
     status_set('maintenance', 'Installing docker-engine from Nvidia PPA.')
-
     # Get the server and key in the apt-key management tool.
-    ksvr = 'hkp://p80.pool.sks-keyservers.net:80'
     for key in ["C95B321B61E88C1809C4F759DDCAE044F796ECB0",
                 "9DC858229FC7DD38854AE2D88D81803C0EBFCD88"]:
-        cmd = 'apt-key adv --keyserver {0} --recv-keys {1}'.format(ksvr, key)
-        check_call(split(cmd))
+        add_apt_key(key)
 
     # Get the package architecture (amd64), not the machine hardware (x86_64)
-    arch = check_output(split('dpkg --print-architecture'))
-    arch = arch.decode('utf-8').rstrip()
+    architecture = arch()
     # Get the lsb information as a dictionary.
     lsb = host.lsb_release()
     code = lsb['DISTRIB_CODENAME']
     rel = lsb['DISTRIB_RELEASE']
+    ubuntu = str(lsb['DISTRIB_ID']).lower()
     dockurl = "https://download.docker.com/linux/ubuntu"
     nvidurl = 'https://nvidia.github.io'
     repo = 'stable'
 
     deb = list()
-    deb.append('deb [arch={0}] {1} {2} {3}'.format(arch, dockurl, code, repo))
+    deb.append('deb [arch={0}] {1} {2} {3}'.format(architecture,
+                                                   dockurl, code, repo))
     for i in ['libnvidia-container',
               'nvidia-container-runtime',
               'nvidia-docker']:
-        deb.append('deb {0}/{1}/ubuntu{2}/{3} /'.format(nvidurl, i, rel, arch))
+        deb.append('deb {0}/{1}/ubuntu{2}/{3} /'.format(nvidurl,
+                                                        i, rel, architecture))
 
+    write_docker_sources(deb)
+
+    install_cuda_drivers_repo(architecture, rel, ubuntu)
+
+    apt_update(fatal=True)
+    # actually install the required packages docker-ce nvidia-docker2
+
+    docker_ce = hookenv.config('docker-ce-package')
+    nvidia_docker2 = hookenv.config('nvidia-docker-package')
+    nv_container_runtime = hookenv.config('nvidia-container-runtime-package')
+    apt_install(['cuda-drivers', docker_ce, nvidia_docker2,
+                 nv_container_runtime], fatal=True)
+
+
+def install_cuda_drivers_repo(architecture, rel, ubuntu):
+    ''' Install cuda drivers this is xenial only.
+     We want to install cuda-drivers only this means that the
+     cuda version plays no role. Any repo will do. '''
+    key_file = '7fa2af80.pub'
+    # distribution should be something like ubuntu1604
+    distribution = '{}{}'.format(ubuntu, str(rel).replace('.', ''))
+    repo_path = 'developer.download.nvidia.com/compute/' \
+                'cuda/repos/{}/x86_64'.format(distribution)
+    cmd = 'apt-key adv --fetch-keys http://{}/{}'.format(repo_path, key_file)
+    check_call(split(cmd))
+    cuda_repo_version = config('cuda_repo')
+    cuda_repo_pkg = 'cuda-repo-{}_{}_{}.deb'.format(distribution,
+                                                    cuda_repo_version,
+                                                    architecture)
+    repo_url = 'https://{}/{}'.format(repo_path, cuda_repo_pkg)
+    r = requests.get(repo_url)
+    r.raise_for_status()
+    with open(cuda_repo_pkg, "wb") as repo_file:
+        for chunk in r.iter_content(chunk_size=1024):
+            repo_file.write(chunk)
+    r.close()
+    cmd = 'dpkg -i  {}'.format(cuda_repo_pkg)
+    check_call(split(cmd))
+
+
+def write_docker_sources(deb):
+    '''Write docker.list under etc/apt/sources.list.d'''
     # mkdir -p /etc/apt/sources.list.d
     if not os.path.isdir('/etc/apt/sources.list.d'):
         os.makedirs('/etc/apt/sources.list.d')
@@ -290,22 +328,14 @@ def install_from_nvidia_apt():
     with(open('/etc/apt/sources.list.d/docker.list', 'w+')) as stream:
         stream.write("\n".join(deb))
 
-    apt_update(fatal=True)
 
-    # actually install the required packages docker-ce nvidia-docker2
-    apt_install(['docker-ce', 'nvidia-docker2'], fatal=True)
-
-    for m in ['nvidia_drm', 'nvidia_uvm', 'nvidia_modeset', 'nvidia']:
-        try:
-            hookenv.log('rmmod {0}'.format(m))
-            check_call(['rmmod', m])
-        except CalledProcessError:
-            hookenv.log('not unloading kmod {0}'.format(m))
-
-    try:
-        check_call(['modprobe', 'nvidia'])
-    except CalledProcessError:
-        hookenv.log('not reloading nvidia kmod')
+def add_apt_key(key):
+    '''Enter the server and key in the apt-key management tool.'''
+    keyserver = 'hkp://p80.pool.sks-keyservers.net:80'
+    cmd = 'apt-key adv --keyserver {0} --recv-keys {1}'.format(keyserver, key)
+    # "apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80
+    # --recv-keys 58118E89F3A912897C070ADBF76221572C52609D"
+    check_call(split(cmd))
 
 
 @when('docker.ready')
@@ -530,3 +560,14 @@ def _remove_docker_network_bridge():
 
     # Render the config and restart docker.
     recycle_daemon()
+
+
+def arch():
+    '''Return the package architecture as a string.'''
+    # Get the package architecture for this system.
+    if not arch.architecture:
+        arch.architecture = check_output(['dpkg',
+                                          '--print-architecture']).rstrip()
+        arch.architecture = arch.architecture.decode('utf-8')
+    return arch.architecture
+arch.architecture = None # noqa: E261, E305

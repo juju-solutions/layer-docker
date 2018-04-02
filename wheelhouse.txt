@@ -2,3 +2,4 @@ setuptools>=19.6,<=20.0
 charms.docker>=0.0.1,<=2.0.0
 vcversioner>=2.0.0,<=3.0.0
 charms.templating.jinja2>=0.0.1,<=2.0.0
+requests>=2.0.0,<3.0.0
