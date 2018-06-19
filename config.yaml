@@ -1,4 +1,8 @@
 options:
+  apt-key-server:
+    description: APT Key Server
+    type: string
+    default: 'hkp://keyserver.ubuntu.com:80'
   docker-opts:
     type: string
     default : ""
@@ -20,7 +24,7 @@ options:
     type: string
     default: "auto"
     description: |
-      docker runtime to install valid values are "upstream" (docker PPA), "nvidia" (nvidia PPA), 
+      docker runtime to install valid values are "upstream" (docker PPA), "nvidia" (nvidia PPA),
       "apt" (ubuntu archive), or "auto" (nvidia PPA or ubuntu archive, based on your hardware)
   cuda_repo:
     type: string

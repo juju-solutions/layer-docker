@@ -157,6 +157,11 @@ def toggle_install_from_upstream():
     toggle_docker_daemon_source()
 
 
+@when('config.changed.apt-key-server', 'docker.ready')
+def toggle_install_with_new_keyserver():
+    toggle_docker_daemon_source()
+
+
 @when('config.changed.docker_runtime', 'docker.ready')
 def toggle_docker_daemon_source():
     ''' A disruptive reaction to config changing that will remove the existing
@@ -331,7 +336,7 @@ def write_docker_sources(deb):
 
 def add_apt_key(key):
     '''Enter the server and key in the apt-key management tool.'''
-    keyserver = 'hkp://p80.pool.sks-keyservers.net:80'
+    keyserver = config('apt-key-server')
     cmd = 'apt-key adv --keyserver {0} --recv-keys {1}'.format(keyserver, key)
     # "apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80
     # --recv-keys 58118E89F3A912897C070ADBF76221572C52609D"
