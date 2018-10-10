@@ -264,6 +264,12 @@ def install_from_nvidia_apt():
                 "9DC858229FC7DD38854AE2D88D81803C0EBFCD88"]:
         add_apt_key(key)
 
+    # Install key for nvidia-docker. This key changes frequently ([expires: 2019-09-20])
+    # so we should do what the official docs say and not try to get it through its
+    # fingerprint.
+    cmd = "apt-key adv --fetch-keys https://nvidia.github.io/nvidia-docker/gpgkey".split()
+    check_call(cmd)
+
     # Get the package architecture (amd64), not the machine hardware (x86_64)
     architecture = arch()
     # Get the lsb information as a dictionary.
