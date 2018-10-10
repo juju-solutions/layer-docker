@@ -4,6 +4,7 @@ from shlex import split
 from subprocess import check_call
 from subprocess import check_output
 from subprocess import CalledProcessError
+from subprocess import Popen, PIPE
 
 
 from charmhelpers.core import host
@@ -267,9 +268,7 @@ def install_from_nvidia_apt():
     # Install key for nvidia-docker. This key changes frequently
     # ([expires: 2019-09-20]) so we should do what the official docs say and
     # not try to get it through its fingerprint.
-    cmd = "apt-key adv --fetch-keys " \
-          "https://nvidia.github.io/nvidia-docker/gpgkey".split()
-    check_call(cmd)
+    add_apt_key_url("https://nvidia.github.io/nvidia-container-runtime/gpgkey")
 
     # Get the package architecture (amd64), not the machine hardware (x86_64)
     architecture = arch()
@@ -339,6 +338,15 @@ def write_docker_sources(deb):
     # Write the docker source file to the apt sources.list.d directory.
     with(open('/etc/apt/sources.list.d/docker.list', 'w+')) as stream:
         stream.write("\n".join(deb))
+
+
+def add_apt_key_url(url):
+    '''Add a key from a URL'''
+    curl_cmd = "curl -s -L {}".format(url).split()
+    curl = Popen(curl_cmd, stdout=PIPE)
+    apt_cmd = "apt-key add -".split()
+    check_call(apt_cmd, stdin=curl.stdout)
+    curl.wait()
 
 
 def add_apt_key(key):
