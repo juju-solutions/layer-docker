@@ -261,9 +261,7 @@ def install_from_nvidia_apt():
     ''' Install cuda docker from the nvidia apt repository. '''
     status_set('maintenance', 'Installing docker-engine from Nvidia PPA.')
     # Get the server and key in the apt-key management tool.
-    for key in ["9DC858229FC7DD38854AE2D88D81803C0EBFCD88"]:
-        add_apt_key(key)
-
+    add_apt_key("9DC858229FC7DD38854AE2D88D81803C0EBFCD88")
     # Install key for nvidia-docker. This key changes frequently
     # ([expires: 2019-09-20]) so we should do what the official docs say and
     # not try to get it through its fingerprint.
