@@ -4,6 +4,7 @@ from shlex import split
 from subprocess import check_call
 from subprocess import check_output
 from subprocess import CalledProcessError
+from subprocess import Popen, PIPE
 
 
 from charmhelpers.core import host
@@ -260,9 +261,11 @@ def install_from_nvidia_apt():
     ''' Install cuda docker from the nvidia apt repository. '''
     status_set('maintenance', 'Installing docker-engine from Nvidia PPA.')
     # Get the server and key in the apt-key management tool.
-    for key in ["C95B321B61E88C1809C4F759DDCAE044F796ECB0",
-                "9DC858229FC7DD38854AE2D88D81803C0EBFCD88"]:
-        add_apt_key(key)
+    add_apt_key("9DC858229FC7DD38854AE2D88D81803C0EBFCD88")
+    # Install key for nvidia-docker. This key changes frequently
+    # ([expires: 2019-09-20]) so we should do what the official docs say and
+    # not try to get it through its fingerprint.
+    add_apt_key_url("https://nvidia.github.io/nvidia-container-runtime/gpgkey")
 
     # Get the package architecture (amd64), not the machine hardware (x86_64)
     architecture = arch()
@@ -332,6 +335,15 @@ def write_docker_sources(deb):
     # Write the docker source file to the apt sources.list.d directory.
     with(open('/etc/apt/sources.list.d/docker.list', 'w+')) as stream:
         stream.write("\n".join(deb))
+
+
+def add_apt_key_url(url):
+    '''Add a key from a URL'''
+    curl_cmd = "curl -s -L {}".format(url).split()
+    curl = Popen(curl_cmd, stdout=PIPE)
+    apt_cmd = "apt-key add -".split()
+    check_call(apt_cmd, stdin=curl.stdout)
+    curl.wait()
 
 
 def add_apt_key(key):

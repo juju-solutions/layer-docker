@@ -28,22 +28,22 @@ options:
       "apt" (ubuntu archive), or "auto" (nvidia PPA or ubuntu archive, based on your hardware)
   cuda_repo:
     type: string
-    default: "9.1.85-1"
+    default: "10.0.130-1"
     description: |
       The cuda-repo package version to install.
   nvidia-docker-package:
     type: string
-    default: "nvidia-docker2=2.0.3+docker17.12.1-1"
+    default: "nvidia-docker2"
     description: |
       The pined version of nvidia-docker2 package.
   nvidia-container-runtime-package:
     type: string
-    default: "nvidia-container-runtime=2.0.0+docker17.12.1-1"
+    default: "nvidia-container-runtime"
     description: |
       The pined version of nvidia-container-runtime package.
   docker-ce-package:
     type: string
-    default: "docker-ce=17.12.1~ce-0~ubuntu"
+    default: "docker-ce"
     description: |
       The pined version of docker-ce package installed with nvidia-docker.
   http_proxy:
