@@ -19,7 +19,7 @@ options:
     type: boolean
     default: false
     description: |
-      Toggle installation from ubuntu archive vs the docker PPA (DEPRECATED please use docker_runtime instead)
+      Toggle installation from ubuntu archive vs the docker PPA (DEPRECATED; please use docker_runtime instead)
   docker_runtime:
     type: string
     default: "auto"
@@ -35,35 +35,36 @@ options:
     type: string
     default: "nvidia-docker2"
     description: |
-      The pined version of nvidia-docker2 package.
+      The pinned version of nvidia-docker2 package.
   nvidia-container-runtime-package:
     type: string
     default: "nvidia-container-runtime"
     description: |
-      The pined version of nvidia-container-runtime package.
+      The pinned version of nvidia-container-runtime package.
   docker-ce-package:
     type: string
     default: "docker-ce"
     description: |
-      The pined version of docker-ce package installed with nvidia-docker.
+      The pinned version of docker-ce package installed with nvidia-docker.
   http_proxy:
      type: string
      default: ""
      description: |
-        URL to use for HTTP_PROXY to be used by Docker. Only useful in closed
-        environments where a proxy is the only option for routing to the
-        registry to pull images
+        URL to use for HTTP_PROXY to be used by Docker. Useful in
+        egress-filtered environments where a proxy is the only option for
+        accessing the registry to pull images.
   https_proxy:
     type: string
     default: ""
     description: |
-        URL to use for HTTPS_PROXY to be used by Docker. Only useful in closed
-        environments where a proxy is the only option for routing to the
-        registry to pull images
+        URL to use for HTTPS_PROXY to be used by Docker. Useful in
+        egress-filtered environments where a proxy is the only option for
+        accessing the registry to pull images.
   no_proxy:
     type: string
     default: ""
     description: |
         Comma-separated list of destinations (either domain names or IP
-        addresses) that should be directly accessed, by opposition of going
-        through the proxy defined above. Must be less than 2023 characters long
+        addresses) which should be accessed directly, rather than through
+        the proxy defined in http_proxy or https_proxy. Must be less than
+        2023 characters long.
