@@ -233,28 +233,26 @@ def install_from_upstream_apt():
     ''' Install docker from the apt repository. This is a pyton adaptation of
     the shell script found at https://get.docker.com/ '''
     status_set('maintenance', 'Installing docker-engine from upstream PPA.')
-    key = '58118E89F3A912897C070ADBF76221572C52609D'
-    add_apt_key(key)
+    key_url = 'https://download.docker.com/linux/ubuntu/gpg'
+    add_apt_key_url(key_url)
     # The url to the server that contains the docker apt packages.
-    apt_url = 'https://apt.dockerproject.org'
+    apt_url = 'https://download.docker.com/linux/ubuntu'
     # Get the package architecture (amd64), not the machine hardware (x86_64)
     architecture = arch()
     # Get the lsb information as a dictionary.
     lsb = host.lsb_release()
-    # Ubuntu must be lowercased.
-    dist = lsb['DISTRIB_ID'].lower()
     # The codename for the release.
     code = lsb['DISTRIB_CODENAME']
-    # repo can be: main, testing or experimental
-    repo = 'main'
-    # deb [arch=amd64] https://apt.dockerproject.org/repo ubuntu-xenial main
+    # repo can be: stable, edge or test.
+    repo = 'stable'
+    # deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable
     deb = list()
-    deb.append('deb [arch={0}] {1}/repo {2}-{3} {4}'.format(
-        architecture, apt_url, dist, code, repo))
+    deb.append('deb [arch={0}] {1} {2} {3}'.format(
+        architecture, apt_url, code, repo))
     write_docker_sources(deb)
     apt_update(fatal=True)
-    # apt-get install -y -q docker-engine
-    apt_install(['docker-engine'], fatal=True)
+    # apt-get install -y -q docker-ce
+    apt_install(['docker-ce'], fatal=True)
 
 
 def install_from_nvidia_apt():
