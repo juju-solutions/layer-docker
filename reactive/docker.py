@@ -309,7 +309,8 @@ def install_from_upstream_apt() -> None:
     # Repo can be: stable, edge or test.
     repo = 'stable'
 
-    # E.g. deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable
+    # E.g.
+    # deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable
     debs = list()
     debs.append(f'deb [arch={architecture}] {apt_url} {code} {repo}')
     write_docker_sources(debs)
@@ -357,7 +358,8 @@ def install_from_nvidia_apt() -> None:
     ]
 
     for package in packages:
-        debs.append(f'deb {nvidia_url}/{package}/ubuntu{release}/{architecture} /')
+        debs.append(
+            f'deb {nvidia_url}/{package}/ubuntu{release}/{architecture} /')
 
     write_docker_sources(debs)
 
@@ -426,13 +428,15 @@ def install_cuda_drivers_repo(
     # Distribution should be something like 'ubuntu1604'.
     distribution = f'{ubuntu}{str(release).replace(".", "")}'
     repository_path = \
-        f'developer.download.nvidia.com/compute/cuda/repos/{distribution}/x86_64'
+        'developer.download.nvidia.com/' \
+        f'compute/cuda/repos/{distribution}/x86_64'
     command = f'apt-key adv --fetch-keys http://{repository_path}/{key_file}'
     check_call(split(command))
 
     cuda_repository_version = config('cuda_repo')
     cuda_repository_package = \
-        f'cuda-repo-{distribution}_{cuda_repository_version}_{architecture}.deb'
+        f'cuda-repo-{distribution}_{cuda_repository_version}' \
+        f'_{architecture}.deb'
     repository_url = f'https://{repository_path}/{cuda_repository_package}'
 
     r = requests.get(repository_url)
