@@ -130,6 +130,8 @@ def install():
         set_state('nvidia-docker.installed')
     elif runtime == "apt":
         install_from_archive_apt()
+    elif runtime == "custom":
+        install_from_custom_apt()
     else:
         hookenv.log('unknown runtime {0}'.format(runtime))
         return False
@@ -297,6 +299,38 @@ def install_from_nvidia_apt():
     nv_container_runtime = hookenv.config('nvidia-container-runtime-package')
     apt_install(['cuda-drivers', docker_ce, nvidia_docker2,
                  nv_container_runtime], fatal=True)
+
+
+def install_from_custom_apt():
+    ''' Install docker from custom repository. '''
+    status_set('maintenance', 'Installing Docker from custom repository.')
+
+    repo_string = config('docker_runtime_repo')
+    key_url = config('docker_runtime_key_url')
+    package_name = config('docker_runtime_package')
+
+    if not repo_string:
+        hookenv.log('`docker_runtime_repo` must be set')
+        return False
+
+    if not key_url:
+        hookenv.log('`docker_runtime_key_url` must be set')
+        return False
+
+    if not package_name:
+        hookenv.log('`docker_runtime_package` must be set')
+        return False
+
+    lsb = host.lsb_release()
+
+    format_dictionary = {
+        'ARCH': arch(),
+        'CODE': lsb['DISTRIB_CODENAME']
+    }
+
+    add_apt_key_url(key_url)
+    write_docker_sources([repo_string.format(**format_dictionary)])
+    apt_install([package_name])
 
 
 def install_cuda_drivers_repo(architecture, rel, ubuntu):
