@@ -130,6 +130,8 @@ def install():
         set_state('nvidia-docker.installed')
     elif runtime == "apt":
         install_from_archive_apt()
+    elif runtime == "custom":
+        install_from_custom_apt()
     else:
         hookenv.log('unknown runtime {0}'.format(runtime))
         return False
@@ -233,28 +235,26 @@ def install_from_upstream_apt():
     ''' Install docker from the apt repository. This is a pyton adaptation of
     the shell script found at https://get.docker.com/ '''
     status_set('maintenance', 'Installing docker-engine from upstream PPA.')
-    key = '58118E89F3A912897C070ADBF76221572C52609D'
-    add_apt_key(key)
+    key_url = 'https://download.docker.com/linux/ubuntu/gpg'
+    add_apt_key_url(key_url)
     # The url to the server that contains the docker apt packages.
-    apt_url = 'https://apt.dockerproject.org'
+    apt_url = 'https://download.docker.com/linux/ubuntu'
     # Get the package architecture (amd64), not the machine hardware (x86_64)
     architecture = arch()
     # Get the lsb information as a dictionary.
     lsb = host.lsb_release()
-    # Ubuntu must be lowercased.
-    dist = lsb['DISTRIB_ID'].lower()
     # The codename for the release.
     code = lsb['DISTRIB_CODENAME']
-    # repo can be: main, testing or experimental
-    repo = 'main'
-    # deb [arch=amd64] https://apt.dockerproject.org/repo ubuntu-xenial main
+    # repo can be: stable, edge or test.
+    repo = 'stable'
+    # deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable
     deb = list()
-    deb.append('deb [arch={0}] {1}/repo {2}-{3} {4}'.format(
-        architecture, apt_url, dist, code, repo))
+    deb.append('deb [arch={0}] {1} {2} {3}'.format(
+        architecture, apt_url, code, repo))
     write_docker_sources(deb)
     apt_update(fatal=True)
-    # apt-get install -y -q docker-engine
-    apt_install(['docker-engine'], fatal=True)
+    # apt-get install -y -q docker-ce
+    apt_install(['docker-ce'], fatal=True)
 
 
 def install_from_nvidia_apt():
@@ -299,6 +299,38 @@ def install_from_nvidia_apt():
     nv_container_runtime = hookenv.config('nvidia-container-runtime-package')
     apt_install(['cuda-drivers', docker_ce, nvidia_docker2,
                  nv_container_runtime], fatal=True)
+
+
+def install_from_custom_apt():
+    ''' Install docker from custom repository. '''
+    status_set('maintenance', 'Installing Docker from custom repository.')
+
+    repo_string = config('docker_runtime_repo')
+    key_url = config('docker_runtime_key_url')
+    package_name = config('docker_runtime_package')
+
+    if not repo_string:
+        hookenv.log('`docker_runtime_repo` must be set')
+        return False
+
+    if not key_url:
+        hookenv.log('`docker_runtime_key_url` must be set')
+        return False
+
+    if not package_name:
+        hookenv.log('`docker_runtime_package` must be set')
+        return False
+
+    lsb = host.lsb_release()
+
+    format_dictionary = {
+        'ARCH': arch(),
+        'CODE': lsb['DISTRIB_CODENAME']
+    }
+
+    add_apt_key_url(key_url)
+    write_docker_sources([repo_string.format(**format_dictionary)])
+    apt_install([package_name])
 
 
 def install_cuda_drivers_repo(architecture, rel, ubuntu):

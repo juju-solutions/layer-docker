@@ -24,8 +24,26 @@ options:
     type: string
     default: "auto"
     description: |
-      docker runtime to install valid values are "upstream" (docker PPA), "nvidia" (nvidia PPA),
-      "apt" (ubuntu archive), or "auto" (nvidia PPA or ubuntu archive, based on your hardware)
+      Docker runtime to install valid values are "upstream" (docker PPA), "nvidia" (nvidia PPA),
+      "apt" (ubuntu archive), "auto" (nvidia PPA or ubuntu archive, based on your hardware),
+      or "custom" (set repository URL, validation key URL and package name).
+  docker_runtime_repo:
+    type: string
+    default: ""
+    description: |
+      Custom Docker repository, given in deb format.  Use `{ARCH}` to determine archetecture at
+      runime.  Use `{CODE}` to set release codename.  E.g.
+      `deb [arch={ARCH}] https://download.docker.com/linux/ubuntu {CODE} stable`.
+  docker_runtime_key_url:
+    type: string
+    default: ""
+    description: |
+      Custom Docker repository validation key URL.
+  docker_runtime_package:
+    type: string
+    default: ""
+    description: |
+      Custom Docker repository package name.
   cuda_repo:
     type: string
     default: "10.0.130-1"
