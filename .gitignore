@@ -1,3 +1,5 @@
+builds/
+deps/
 .tox
 .cache
 *.pyc
