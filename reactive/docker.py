@@ -335,11 +335,11 @@ def fix_docker_runtime_nvidia():
 
     :return: None
     """
-    with open('/etc/docker/daemon.json') as json_file:
-        data = json.load(json_file)
+    with open('/etc/docker/daemon.json') as f:
+        data = json.load(f)
     data['default-runtime'] = 'nvidia'
-    with open('/etc/docker/daemon.json', 'w') as out_file:
-        json.dump(data, out_file)
+    with open('/etc/docker/daemon.json', 'w') as f:
+        json.dump(data, f)
 
     host.service_restart('docker')
 
