@@ -64,6 +64,20 @@ def unholdall():
     for k in dockerpackages.keys():
         apt_unhold(dockerpackages[k])
 
+def set_custom_docker_package():
+    """
+    If a custom Docker package is defined, add it to
+    the object.
+
+    :return: None
+    """
+    runtime = determineAptSource()
+    if runtime == 'custom':
+        hookenv.log(
+            'Adding custom package {} to environment'.format(
+                config('docker_runtime_package')))
+        dockerpackages['custom'] = [config('docker_runtime_package')]
+
 
 @hook('upgrade-charm')
 def upgrade():
@@ -93,9 +107,7 @@ def determineAptSource():
 @when_not('docker.ready')
 def install():
     ''' Install the docker daemon, and supporting tooling '''
-
     # switching runtimes causes a reinstall so remove any holds that exist
-
     unholdall()
 
     # Often when building layer-docker based subordinates, you dont need to
@@ -119,9 +131,9 @@ def install():
     apt_install(packages)
 
     # Install docker-engine from apt.
-    runtime = determineAptSource()
     remove_state('nvidia-docker.supported')
     remove_state('nvidia-docker.installed')
+    runtime = determineAptSource()
     if runtime == "upstream":
         install_from_upstream_apt()
     elif runtime == "nvidia":
@@ -170,6 +182,8 @@ def toggle_docker_daemon_source():
     ''' A disruptive reaction to config changing that will remove the existing
     docker daemon and install the latest available deb from the upstream PPA,
     Nvidia PPA, or Universe depending on the docker_runtime setting. '''
+
+    set_custom_docker_package()
 
     # this returns a list of packages not currently installed on the system
     # based on the parameters input. Use this to check if we have taken
