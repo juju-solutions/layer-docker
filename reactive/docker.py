@@ -49,7 +49,7 @@ from charms import layer
 # react to the proper event.
 
 dockerpackages = {'apt': ['docker.io'],
-                  'upstream': ['docker-engine'],
+                  'upstream': ['docker-ce'],
                   'nvidia': ['docker-ce',
                              'nvidia-docker2',
                              'nvidia-container-runtime',
@@ -64,6 +64,7 @@ def holdall():
 def unholdall():
     for k in dockerpackages.keys():
         apt_unhold(dockerpackages[k])
+
 
 def set_custom_docker_package():
     """
@@ -131,7 +132,7 @@ def install():
     apt_update()
     apt_install(packages)
 
-    # Install docker-engine from apt.
+    # Install Docker from apt.
     remove_state('nvidia-docker.supported')
     remove_state('nvidia-docker.installed')
     runtime = determineAptSource()
@@ -249,7 +250,7 @@ def install_from_archive_apt():
 def install_from_upstream_apt():
     ''' Install docker from the apt repository. This is a pyton adaptation of
     the shell script found at https://get.docker.com/ '''
-    status_set('maintenance', 'Installing docker-engine from upstream PPA.')
+    status_set('maintenance', 'Installing docker-ce from upstream PPA.')
     key_url = 'https://download.docker.com/linux/ubuntu/gpg'
     add_apt_key_url(key_url)
     # The url to the server that contains the docker apt packages.
@@ -353,6 +354,7 @@ def install_from_custom_apt():
 
     add_apt_key_url(key_url)
     write_docker_sources([repo_string.format(**format_dictionary)])
+    apt_update()
     apt_install([package_name])
 
 
