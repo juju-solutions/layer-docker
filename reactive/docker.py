@@ -49,7 +49,7 @@ from charms import layer
 # react to the proper event.
 
 dockerpackages = {'apt': ['docker.io'],
-                  'upstream': ['docker-engine'],
+                  'upstream': ['docker-ce'],
                   'nvidia': ['docker-ce',
                              'nvidia-docker2',
                              'nvidia-container-runtime',
@@ -64,6 +64,21 @@ def holdall():
 def unholdall():
     for k in dockerpackages.keys():
         apt_unhold(dockerpackages[k])
+
+
+def set_custom_docker_package():
+    """
+    If a custom Docker package is defined, add it to
+    the object.
+
+    :return: None
+    """
+    runtime = determineAptSource()
+    if runtime == 'custom':
+        hookenv.log(
+            'Adding custom package {} to environment'.format(
+                config('docker_runtime_package')))
+        dockerpackages['custom'] = [config('docker_runtime_package')]
 
 
 @hook('upgrade-charm')
@@ -94,9 +109,7 @@ def determineAptSource():
 @when_not('docker.ready')
 def install():
     ''' Install the docker daemon, and supporting tooling '''
-
     # switching runtimes causes a reinstall so remove any holds that exist
-
     unholdall()
 
     # Often when building layer-docker based subordinates, you dont need to
@@ -119,10 +132,10 @@ def install():
     apt_update()
     apt_install(packages)
 
-    # Install docker-engine from apt.
-    runtime = determineAptSource()
+    # Install Docker from apt.
     remove_state('nvidia-docker.supported')
     remove_state('nvidia-docker.installed')
+    runtime = determineAptSource()
     if runtime == "upstream":
         install_from_upstream_apt()
     elif runtime == "nvidia":
@@ -131,6 +144,9 @@ def install():
         set_state('nvidia-docker.installed')
     elif runtime == "apt":
         install_from_archive_apt()
+    elif runtime == "custom":
+        if not install_from_custom_apt():
+            return False  # If install fails, stop.
     else:
         hookenv.log('unknown runtime {0}'.format(runtime))
         return False
@@ -169,6 +185,8 @@ def toggle_docker_daemon_source():
     ''' A disruptive reaction to config changing that will remove the existing
     docker daemon and install the latest available deb from the upstream PPA,
     Nvidia PPA, or Universe depending on the docker_runtime setting. '''
+
+    set_custom_docker_package()
 
     # this returns a list of packages not currently installed on the system
     # based on the parameters input. Use this to check if we have taken
@@ -233,7 +251,7 @@ def install_from_archive_apt():
 def install_from_upstream_apt():
     ''' Install docker from the apt repository. This is a pyton adaptation of
     the shell script found at https://get.docker.com/ '''
-    status_set('maintenance', 'Installing docker-engine from upstream PPA.')
+    status_set('maintenance', 'Installing docker-ce from upstream PPA.')
     key_url = 'https://download.docker.com/linux/ubuntu/gpg'
     add_apt_key_url(key_url)
     # The url to the server that contains the docker apt packages.
@@ -300,6 +318,45 @@ def install_from_nvidia_apt():
                  nv_container_runtime], fatal=True)
 
     fix_docker_runtime_nvidia()
+
+
+def install_from_custom_apt():
+    ''' Install docker from custom repository. '''
+    status_set('maintenance', 'Installing Docker from custom repository.')
+
+    repo_string = config('docker_runtime_repo')
+    key_url = config('docker_runtime_key_url')
+    package_name = config('docker_runtime_package')
+
+    if not repo_string:
+        message = '`docker_runtime_repo` must be set'
+        hookenv.log(message)
+        hookenv.status_set('blocked', message)
+        return False
+
+    if not key_url:
+        message = '`docker_runtime_key_url` must be set'
+        hookenv.log(message)
+        hookenv.status_set('blocked', message)
+        return False
+
+    if not package_name:
+        message = '`docker_runtime_package` must be set'
+        hookenv.log(message)
+        hookenv.status_set('blocked', message)
+        return False
+
+    lsb = host.lsb_release()
+
+    format_dictionary = {
+        'ARCH': arch(),
+        'CODE': lsb['DISTRIB_CODENAME']
+    }
+
+    add_apt_key_url(key_url)
+    write_docker_sources([repo_string.format(**format_dictionary)])
+    apt_update()
+    apt_install([package_name])
 
 
 def install_cuda_drivers_repo(architecture, rel, ubuntu):
