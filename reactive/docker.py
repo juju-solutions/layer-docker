@@ -1,4 +1,5 @@
 import os
+import json
 import requests
 from shlex import split
 from subprocess import check_call
@@ -314,6 +315,8 @@ def install_from_nvidia_apt():
     apt_install(['cuda-drivers', docker_ce, nvidia_docker2,
                  nv_container_runtime], fatal=True)
 
+    fix_docker_runtime_nvidia()
+
 
 def install_from_custom_apt():
     ''' Install docker from custom repository. '''
@@ -377,6 +380,22 @@ def install_cuda_drivers_repo(architecture, rel, ubuntu):
     r.close()
     cmd = 'dpkg -i  {}'.format(cuda_repo_pkg)
     check_call(split(cmd))
+
+
+def fix_docker_runtime_nvidia():
+    """
+    The default runtime needs setting
+    to `nvidia` after Docker installation.
+
+    :return: None
+    """
+    with open('/etc/docker/daemon.json') as f:
+        data = json.load(f)
+    data['default-runtime'] = 'nvidia'
+    with open('/etc/docker/daemon.json', 'w') as f:
+        json.dump(data, f)
+
+    host.service_restart('docker')
 
 
 def write_docker_sources(deb):
