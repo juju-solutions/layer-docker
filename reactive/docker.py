@@ -145,7 +145,8 @@ def install():
     elif runtime == "apt":
         install_from_archive_apt()
     elif runtime == "custom":
-        install_from_custom_apt()
+        if not install_from_custom_apt():
+            return False  # If install fails, stop.
     else:
         hookenv.log('unknown runtime {0}'.format(runtime))
         return False
