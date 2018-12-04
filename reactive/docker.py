@@ -1,4 +1,5 @@
 import os
+import json
 import requests
 from shlex import split
 from subprocess import check_call
@@ -47,9 +48,10 @@ from charms import layer
 # Be sure you bind to it appropriately in your workload layer and
 # react to the proper event.
 
-docker_packages: dict = {
+
+docker_packages = {
     'apt': ['docker.io'],
-    'upstream': ['docker-engine'],
+    'upstream': ['docker-ce'],
     'nvidia': [
         'docker-ce',
         'nvidia-docker2',
@@ -59,7 +61,7 @@ docker_packages: dict = {
 }
 
 
-def hold_all() -> None:
+def hold_all():
     """
     Hold packages.
 
@@ -69,7 +71,7 @@ def hold_all() -> None:
         apt_hold(docker_packages[k])
 
 
-def unhold_all() -> None:
+def unhold_all():
     """
     Unhold Packages.
 
@@ -80,7 +82,7 @@ def unhold_all() -> None:
 
 
 @hook('upgrade-charm')
-def upgrade() -> None:
+def upgrade():
     """
     :return: None
     """
@@ -89,7 +91,22 @@ def upgrade() -> None:
         'Holding docker packages at current revision.')
 
 
-def determine_apt_source() -> str:
+def set_custom_docker_package():
+    """
+    If a custom Docker package is defined, add it to
+    the object.
+
+    :return: None
+    """
+    runtime = determine_apt_source()
+    if runtime == 'custom':
+        hookenv.log(
+            'Adding custom package {} to environment'.format(
+                config('docker_runtime_package')))
+        docker_packages['custom'] = [config('docker_runtime_package')]
+
+
+def determine_apt_source():
     """
     :return: String docker runtime
     """
@@ -106,18 +123,18 @@ def determine_apt_source() -> str:
         else:
             docker_runtime = 'apt'
 
-    hookenv.log(f'Setting runtime to {docker_packages}')
+    hookenv.log(
+        'Setting runtime to {}'.format(docker_packages))
     return docker_runtime
 
 
 @when_not('docker.ready')
-def install() -> Optional[bool]:
+def install():
     """
     Install the docker daemon, and supporting tooling.
 
     :return: None or False
     """
-
     # Switching runtimes causes a reinstall so remove any holds that exist.
     unhold_all()
 
@@ -154,9 +171,10 @@ def install() -> Optional[bool]:
     elif runtime == 'apt':
         install_from_archive_apt()
     elif runtime == 'custom':
-        install_from_custom_apt()
+        if not install_from_custom_apt():
+            return False  # If install fails, stop.
     else:
-        hookenv.log(f'Unknown runtime {runtime}')
+        hookenv.log('Unknown runtime {}'.format(runtime))
         return False
 
     validate_config()
@@ -189,7 +207,7 @@ def install() -> Optional[bool]:
 
 
 @when('config.changed.install_from_upstream', 'docker.ready')
-def toggle_install_from_upstream() -> None:
+def toggle_install_from_upstream():
     """
     :return: None
     """
@@ -197,7 +215,7 @@ def toggle_install_from_upstream() -> None:
 
 
 @when('config.changed.apt-key-server', 'docker.ready')
-def toggle_install_with_new_keyserver() -> None:
+def toggle_install_with_new_keyserver():
     """
     :return: None
     """
@@ -205,7 +223,7 @@ def toggle_install_with_new_keyserver() -> None:
 
 
 @when('config.changed.docker_runtime', 'docker.ready')
-def toggle_docker_daemon_source() -> Optional[bool]:
+def toggle_docker_daemon_source():
     """
     A disruptive reaction to config changing that will remove the existing
     docker daemon and install the latest available deb from the upstream PPA,
@@ -220,7 +238,7 @@ def toggle_docker_daemon_source() -> Optional[bool]:
     installed = []
     for k in docker_packages.keys():
         packages = filter_installed_packages(docker_packages[k])
-        if packages is []:
+        if packages == []:
             installed.append(k)
 
     # None of the docker packages are installed.
@@ -232,10 +250,10 @@ def toggle_docker_daemon_source() -> Optional[bool]:
 
     runtime = determine_apt_source()
     if not docker_packages.get(runtime):
-        hookenv.log(f'Unknown runtime {runtime}')
+        hookenv.log('Unknown runtime {}'.format(runtime))
         return False
 
-    hookenv.log(f'Runtime to install {runtime}')
+    hookenv.log('Runtime to install {}'.format(runtime))
 
     # Workaround
     # https://bugs.launchpad.net/ubuntu/+source/docker.io/+bug/1724353.
@@ -250,8 +268,8 @@ def toggle_docker_daemon_source() -> Optional[bool]:
     if runtime not in installed:
         host.service_stop('docker')
         for k in docker_packages.keys():
-            pkglist = " ".join(docker_packages[k])
-            hookenv.log(f'Removing package(s): {pkglist}.')
+            package_list = " ".join(docker_packages[k])
+            hookenv.log('Removing package(s): {}.'.format(package_list))
             apt_unhold(docker_packages[k])
             apt_purge(docker_packages[k])
             remove_state('docker.ready')
@@ -263,7 +281,7 @@ def toggle_docker_daemon_source() -> Optional[bool]:
 @when_any('config.changed.http_proxy', 'config.changed.https_proxy',
           'config.changed.no_proxy')
 @when('docker.ready')
-def proxy_changed() -> None:
+def proxy_changed():
     """
     The proxy information has changed, render templates and restart the
     docker daemon.
@@ -273,7 +291,7 @@ def proxy_changed() -> None:
     recycle_daemon()
 
 
-def install_from_archive_apt() -> None:
+def install_from_archive_apt():
     """
     Install Docker from Ubuntu universe.
 
@@ -283,14 +301,14 @@ def install_from_archive_apt() -> None:
     apt_install(['docker.io'], fatal=True)
 
 
-def install_from_upstream_apt() -> None:
+def install_from_upstream_apt():
     """
     Install docker from the apt repository. This is a pyton adaptation of
     the shell script found at https://get.docker.com/.
 
     :return: None
     """
-    status_set('maintenance', 'Installing docker-engine from upstream PPA.')
+    status_set('maintenance', 'Installing docker-ce from upstream PPA.')
     key_url = 'https://download.docker.com/linux/ubuntu/gpg'
     add_apt_key_url(key_url)
 
@@ -312,15 +330,23 @@ def install_from_upstream_apt() -> None:
     # E.g.
     # deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable
     debs = list()
-    debs.append(f'deb [arch={architecture}] {apt_url} {code} {repo}')
+    debs.append('deb [arch={}] {} {} {}'.format(
+        architecture,
+        apt_url,
+        code,
+        repo
+    ))
     write_docker_sources(debs)
     apt_update(fatal=True)
 
     # Install Docker via apt.
-    apt_install(['docker-ce'], fatal=True)
+    apt_install(
+        docker_packages['upstream'],
+        fatal=True
+    )
 
 
-def install_from_nvidia_apt() -> None:
+def install_from_nvidia_apt():
     """
     Install cuda docker from the nvidia apt repository.
 
@@ -349,7 +375,12 @@ def install_from_nvidia_apt() -> None:
     repo = 'stable'
 
     debs = list()
-    debs.append(f'deb [arch={architecture}] {docker_url} {code} {repo}')
+    debs.append('deb [arch={}] {} {} {}'.format(
+        architecture,
+        docker_url,
+        code,
+        repo
+    ))
 
     packages = [
         'libnvidia-container',
@@ -358,8 +389,12 @@ def install_from_nvidia_apt() -> None:
     ]
 
     for package in packages:
-        debs.append(
-            f'deb {nvidia_url}/{package}/ubuntu{release}/{architecture} /')
+        debs.append('deb {}/{}/ubuntu{}/{} /'.format(
+            nvidia_url,
+            package,
+            release,
+            architecture
+        ))
 
     write_docker_sources(debs)
 
@@ -374,8 +409,10 @@ def install_from_nvidia_apt() -> None:
     apt_install(['cuda-drivers', docker_ce, nvidia_docker2,
                  nv_container_runtime], fatal=True)
 
+    fix_docker_runtime_nvidia()
 
-def install_from_custom_apt() -> Optional[bool]:
+
+def install_from_custom_apt():
     """
     Install docker from custom repository.
 
@@ -388,15 +425,21 @@ def install_from_custom_apt() -> Optional[bool]:
     package_name = config('docker_runtime_package')
 
     if not repo_string:
-        hookenv.log('`docker_runtime_repo` must be set')
+        message = '`docker_runtime_repo` must be set'
+        hookenv.log(message)
+        hookenv.status_set('blocked', message)
         return False
 
     if not key_url:
-        hookenv.log('`docker_runtime_key_url` must be set')
+        message = '`docker_runtime_key_url` must be set'
+        hookenv.log(message)
+        hookenv.status_set('blocked', message)
         return False
 
     if not package_name:
-        hookenv.log('`docker_runtime_package` must be set')
+        message = '`docker_runtime_package` must be set'
+        hookenv.log(message)
+        hookenv.status_set('blocked', message)
         return False
 
     lsb = host.lsb_release()
@@ -408,11 +451,11 @@ def install_from_custom_apt() -> Optional[bool]:
 
     add_apt_key_url(key_url)
     write_docker_sources([repo_string.format(**format_dictionary)])
+    apt_update()
     apt_install([package_name])
 
 
-def install_cuda_drivers_repo(
-        architecture: str, release: str, ubuntu: str) -> None:
+def install_cuda_drivers_repo(architecture, release, ubuntu):
     """
     Install cuda drivers this is xenial only.
     We want to install cuda-drivers only this means that the
@@ -426,18 +469,30 @@ def install_cuda_drivers_repo(
     key_file = '7fa2af80.pub'
 
     # Distribution should be something like 'ubuntu1604'.
-    distribution = f'{ubuntu}{str(release).replace(".", "")}'
+    distribution = '{}{}'.format(
+        ubuntu,
+        str(release).replace('.', '')
+    )
     repository_path = \
-        'developer.download.nvidia.com/' \
-        f'compute/cuda/repos/{distribution}/x86_64'
-    command = f'apt-key adv --fetch-keys http://{repository_path}/{key_file}'
+        'developer.download.nvidia.com/compute/cuda/repos/{}/x86_64'.format(
+            distribution
+        )
+    command = 'apt-key adv --fetch-keys http://{}/{}'.format(
+        repository_path,
+        key_file
+    )
     check_call(split(command))
 
     cuda_repository_version = config('cuda_repo')
-    cuda_repository_package = \
-        f'cuda-repo-{distribution}_{cuda_repository_version}' \
-        f'_{architecture}.deb'
-    repository_url = f'https://{repository_path}/{cuda_repository_package}'
+    cuda_repository_package = 'cuda-repo-{}_{}_{}.deb'.format(
+        distribution,
+        cuda_repository_version,
+        architecture
+    )
+    repository_url = 'https://{}/{}'.format(
+        repository_path,
+        cuda_repository_package
+    )
 
     r = requests.get(repository_url)
     r.raise_for_status()
@@ -446,18 +501,34 @@ def install_cuda_drivers_repo(
             f.write(chunk)
     r.close()
 
-    command = f'dpkg -i {cuda_repository_package}'
+    command = 'dpkg -i {}'.format(cuda_repository_package)
     check_call(split(command))
 
 
-def write_docker_sources(debs: List[str]) -> None:
+def fix_docker_runtime_nvidia():
     """
-    Write docker.list under etc/apt/sources.list.d
+    The default runtime needs setting
+    to `nvidia` after Docker installation.
 
-    :param: String
     :return: None
     """
-    # Run mkdir -p /etc/apt/sources.list.d
+    with open('/etc/docker/daemon.json') as f:
+        data = json.load(f)
+    data['default-runtime'] = 'nvidia'
+    with open('/etc/docker/daemon.json', 'w') as f:
+        json.dump(data, f)
+
+    host.service_restart('docker')
+
+
+def write_docker_sources(debs):
+    """
+    Write docker.list under etc/apt/sources.list.d.
+    
+    :param debs: List String
+    :return: None
+    """
+    # Run mkdir -p /etc/apt/sources.list.d.
     if not os.path.isdir('/etc/apt/sources.list.d'):
         os.makedirs('/etc/apt/sources.list.d')
 
@@ -466,21 +537,21 @@ def write_docker_sources(debs: List[str]) -> None:
         stream.write('\n'.join(debs))
 
 
-def add_apt_key_url(url: str) -> None:
+def add_apt_key_url(url):
     """
-    Add a key from a URL
+    Add a key from a URL.
 
     :param url: String
     :return: None
     """
-    curl_command = f'curl -s -L {url}'.split()
+    curl_command = 'curl -s -L {}'.format(url).split()
     curl = Popen(curl_command, stdout=PIPE)
     apt_command = 'apt-key add -'.split()
     check_call(apt_command, stdin=curl.stdout)
     curl.wait()
 
 
-def add_apt_key(key: str) -> None:
+def add_apt_key(key):
     """
     Enter the server and key in the apt-key management tool.
 
@@ -488,7 +559,7 @@ def add_apt_key(key: str) -> None:
     :return: None
     """
     keyserver = config('apt-key-server')
-    cmd = f'apt-key adv --keyserver {keyserver} --recv-keys {key}'
+    cmd = 'apt-key adv --keyserver {} --recv-keys {}'.format(keyserver, key)
 
     # "apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80
     # --recv-keys 58118E89F3A912897C070ADBF76221572C52609D"
@@ -497,7 +568,7 @@ def add_apt_key(key: str) -> None:
 
 @when('docker.ready')
 @when_not('cgroups.modified')
-def enable_grub_cgroups() -> None:
+def enable_grub_cgroups():
     """
     :return: None
     """
@@ -510,7 +581,7 @@ def enable_grub_cgroups() -> None:
 
 @when('docker.ready')
 @when_not('docker.available')
-def signal_workloads_start() -> None:
+def signal_workloads_start():
     """
     Signal to higher layers the container runtime is ready to run
     workloads. At this time the only reasonable thing we can do
@@ -530,7 +601,7 @@ def signal_workloads_start() -> None:
 
 
 @when('sdn-plugin.available', 'docker.available')
-def container_sdn_setup(sdn) -> None:
+def container_sdn_setup(sdn):
     """
     Receive the information from the SDN plugin, and render the docker
     engine options.
@@ -558,7 +629,7 @@ def container_sdn_setup(sdn) -> None:
 
 @when_not('sdn-plugin.available')
 @when('docker.sdn.configured')
-def scrub_sdn_config() -> None:
+def scrub_sdn_config():
     """
     If this scenario of states is true, we have likely broken a
     relationship to our once configured SDN provider. This necessitates a
@@ -567,7 +638,6 @@ def scrub_sdn_config() -> None:
 
     :return: None
     """
-
     opts = DockerOpts()
     try:
         opts.pop('bip')
@@ -590,7 +660,7 @@ def scrub_sdn_config() -> None:
 
 
 @when('docker.restart')
-def docker_restart() -> None:
+def docker_restart():
     """
     Other layers should be able to trigger a daemon restart. Invoke the
     method that recycles the docker daemon.
@@ -602,7 +672,7 @@ def docker_restart() -> None:
 
 
 @when('config.changed.docker-opts', 'docker.ready')
-def docker_template_update() -> None:
+def docker_template_update():
     """
     The user has passed configuration that directly effects our running
     docker engine instance. Re-render the systemd files and recycle the
@@ -615,7 +685,7 @@ def docker_template_update() -> None:
 
 @when('docker.ready', 'dockerhost.connected')
 @when_not('dockerhost.configured')
-def dockerhost_connected(dockerhost) -> None:
+def dockerhost_connected(dockerhost):
     """
     Transmits the docker url to any subordinates requiring it.
 
@@ -626,7 +696,7 @@ def dockerhost_connected(dockerhost) -> None:
 
 @when('nrpe-external-master.available')
 @when_not('nrpe-external-master.docker.initial-config')
-def initial_nrpe_config() -> None:
+def initial_nrpe_config():
     """
     :return: None
     """
@@ -638,7 +708,7 @@ def initial_nrpe_config() -> None:
 @when('nrpe-external-master.available')
 @when_any('config.changed.nagios_context',
           'config.changed.nagios_servicegroups')
-def update_nrpe_config() -> None:
+def update_nrpe_config():
     """
     :return: None
     """
@@ -656,7 +726,7 @@ def update_nrpe_config() -> None:
 
 @when_not('nrpe-external-master.available')
 @when('nrpe-external-master.docker.initial-config')
-def remove_nrpe_config() -> None:
+def remove_nrpe_config():
     """
     :return: None
     """
@@ -678,7 +748,7 @@ class ConfigError(Exception):
     pass
 
 
-def validate_config() -> None:
+def validate_config():
     """
     Check that config is valid.
 
@@ -691,7 +761,7 @@ def validate_config() -> None:
         raise ConfigError('no_proxy longer than {} chars.'.format(remain_len))
 
 
-def recycle_daemon() -> None:
+def recycle_daemon():
     """
     Render the docker template files and restart the docker daemon on this
     system.
@@ -723,7 +793,7 @@ def recycle_daemon() -> None:
         return
 
 
-def reload_system_daemons() -> None:
+def reload_system_daemons():
     """
     Reload the system daemons from on-disk configuration changes.
 
@@ -739,15 +809,15 @@ def reload_system_daemons() -> None:
         host.service_reload('docker')
 
 
-def _probe_runtime_availability() -> bool:
+def _probe_runtime_availability():
     """
     Determine if the workload daemon is active and responding.
 
     :return: Boolean
     """
     try:
-        cmd = ['docker', 'info']
-        check_call(cmd)
+        command = ['docker', 'info']
+        check_call(command)
         return True
     except CalledProcessError:
         # Remove the availability state if we fail reachability.
@@ -755,7 +825,7 @@ def _probe_runtime_availability() -> bool:
         return False
 
 
-def _remove_docker_network_bridge() -> None:
+def _remove_docker_network_bridge():
     """
     By default docker uses the docker0 bridge for container networking.
     This method removes the default docker bridge, and reconfigures the
@@ -778,7 +848,7 @@ def _remove_docker_network_bridge() -> None:
     recycle_daemon()
 
 
-def arch() -> str:
+def arch():
     """
     Return the package architecture as a string.
 
