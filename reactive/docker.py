@@ -6,7 +6,6 @@ from subprocess import check_call
 from subprocess import check_output
 from subprocess import CalledProcessError
 from subprocess import Popen, PIPE
-from typing import Optional, List
 
 from charmhelpers.core import host
 from charmhelpers.core import hookenv
@@ -524,7 +523,7 @@ def fix_docker_runtime_nvidia():
 def write_docker_sources(debs):
     """
     Write docker.list under etc/apt/sources.list.d.
-    
+
     :param debs: List String
     :return: None
     """
