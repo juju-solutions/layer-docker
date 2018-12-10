@@ -65,45 +65,8 @@ issues about this.
 
 # Configuration
 
-- docker-opts : Pass through configuration to the docker daemon, such as
-configuring the docker daemon to allow an insecure private registry.
-
-```
-juju config docker docker-opts='--insecure-registry=http://my.insecure.registry:5000'
-```
-
-- enable-cgroups = (false) : To enable memory and swap on system using GNU GRUB 
-(GNU GRand Unified Bootloader) set this value to 'true'. It updates the 
-`/etc/default/grub` file setting `GRUB_CMDLINE_LINUX` to 
-`cgroup_enable=memory swapaccount=1`. The default value is 'false'. 
-**WARNING**: changing this option will initiate a reboot of the host - use with
-caution on as your containers will shutdown when this configuration value is 
-set. 
-
-- http_proxy : The string URL that will set the HTTP_PROXY environment variable
-for Docker containers. Useful in environments with restricted networks where a 
-proxy is the only route to the registry to pull images. Setting this option 
-forces the Docker daemon to restart. 
-
-- https_proxy : The string URL that will set the HTTPS_PROXY environment 
-variable for Docker containers. Useful in environments with restricted networks
-where a proxy is the only route to the registry to pull images. Setting this
-option forces the Docker daemon to restart.
-
-- no_proxy : The comma-separated list of destinations (domain names or IP
-addresses) that will set the NO_PROXY environment variable for Docker
-containers. Useful in environments with restricted networks where a proxy is
-the only route to the registry to pull images, but you still need to access a
-few domains directly (e.g. an internal, private registry). Setting this option
-forces the Docker daemon to restart.
-
-- nagios_context : A string that will be prepended to instance name to set the
-host name in nagios.If you're running multiple environments with the same
-services in them this allows you to differentiate between them. Used by the
-nrpe subordinate charm.
-
-- nagios_servicegroups : The comma-separated list of servicegroups that the
-generated Nagios checks will belong to.
+See [config.yaml](config.yaml) for
+list of configuration options.
 
 ## Docker Compose
 

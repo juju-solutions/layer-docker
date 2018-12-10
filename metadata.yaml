@@ -7,6 +7,7 @@ maintainers:
     - Konstantinos Tsakalozos <kos.tsakalozos@canonical.com>
     - Charles Butler <Chuck@dasroot.net>
     - Matthew Bruzek <mbruzek@ubuntu.com>
+    - Joe Borg <joseph.borg@canonical.com>
 description: |
   A Juju charm layer that handles installing Docker, including a library to 
   make it easier to use Docker containers inside a Juju model.
@@ -16,6 +17,7 @@ tags:
 subordinate: false
 series:
   - xenial
+  - bionic
 provides:
   dockerhost:
     interface: dockerhost
