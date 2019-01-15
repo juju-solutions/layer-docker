@@ -62,7 +62,7 @@ options:
       The pinned version of nvidia-container-runtime package.
   docker-ce-package:
     type: string
-    default: "docker-ce"
+    default: "docker-ce=5:18.09.0~3-0~ubuntu-bionic"
     description: |
       The pinned version of docker-ce package installed with nvidia-docker.
   http_proxy:
