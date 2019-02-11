@@ -52,7 +52,7 @@ options:
       The cuda-repo package version to install.
   nvidia-docker-package:
     type: string
-    default: "nvidia-docker2"
+    default: "nvidia-docker2=2.0.3+docker18.09.1-1"
     description: |
       The pinned version of nvidia-docker2 package.
   nvidia-container-runtime-package:
@@ -62,7 +62,7 @@ options:
       The pinned version of nvidia-container-runtime package.
   docker-ce-package:
     type: string
-    default: "docker-ce=5:18.09.0~3-0~ubuntu-bionic"
+    default: "docker-ce=5:18.09.1~3-0~ubuntu-bionic"
     description: |
       The pinned version of docker-ce package installed with nvidia-docker.
   http_proxy:
