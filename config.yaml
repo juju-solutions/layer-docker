@@ -57,7 +57,7 @@ options:
       The pinned version of nvidia-docker2 package.
   nvidia-container-runtime-package:
     type: string
-    default: "nvidia-container-runtime"
+    default: "nvidia-container-runtime=2.0.0+docker18.09.1-1"
     description: |
       The pinned version of nvidia-container-runtime package.
   docker-ce-package:
