@@ -558,7 +558,11 @@ def add_apt_key(key):
     :return: None
     """
     keyserver = config('apt-key-server')
-    cmd = 'apt-key adv --keyserver {} --recv-keys {}'.format(keyserver, key)
+    http_proxy = config('http_proxy')
+    cmd = 'apt-key adv --keyserver {0}'.format(keyserver)
+    if http_proxy:
+        cmd = '{0} --keyserver-options http-proxy={1}'.format(cmd, http_proxy)
+    cmd = '{0} --recv-keys {1}'.format(cmd, key)
 
     # "apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80
     # --recv-keys 58118E89F3A912897C070ADBF76221572C52609D"
