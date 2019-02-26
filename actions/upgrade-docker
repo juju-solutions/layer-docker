@@ -1,0 +1,50 @@
+#!/usr/local/sbin/charm-env python3
+
+from charmhelpers.core.hookenv import (
+    action_set,
+    action_fail
+)
+
+from charmhelpers.fetch import (
+    apt_install,
+    apt_update,
+    apt_hold,
+    apt_unhold
+)
+
+from charmhelpers.core import host
+from charmhelpers.core.templating import render
+
+from charms.layer.docker import (
+    docker_packages,
+    determine_apt_source,
+    render_configuration_template
+)
+
+
+def main():
+    """
+    :return: None
+    """
+    try:
+        apt_update(fatal=True)
+
+        runtime = determine_apt_source()
+        apt_unhold(docker_packages[runtime])
+        apt_install(docker_packages[runtime], fatal=True)
+        apt_hold(docker_packages[runtime])
+
+        render_configuration_template(service=True)
+
+        host.service_reload('docker')
+
+        action_set({
+            'runtime': ', '.join(docker_packages[runtime])
+        })
+
+    except Exception as e:
+        action_fail(e)
+
+
+if __name__ == '__main__':
+    main()

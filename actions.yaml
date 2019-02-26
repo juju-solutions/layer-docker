@@ -1,3 +1,5 @@
+upgrade-docker:
+    description: Force upgrades Docker to latest repository version
 clean-containers:
     description: Garbage collect non-running containers
 clean-images:
