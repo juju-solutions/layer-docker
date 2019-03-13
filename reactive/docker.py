@@ -11,7 +11,6 @@ from charmhelpers.core import host
 from charmhelpers.core import hookenv
 from charmhelpers.core.hookenv import status_set
 from charmhelpers.core.hookenv import config
-from charmhelpers.core.templating import render
 from charmhelpers.fetch import apt_install
 from charmhelpers.fetch import apt_purge
 from charmhelpers.fetch import apt_update
@@ -27,6 +26,11 @@ from charms.reactive import when
 from charms.reactive import when_any
 from charms.reactive import when_not
 from charms.reactive.helpers import data_changed
+
+from charms.layer.docker import arch
+from charms.layer.docker import docker_packages
+from charms.layer.docker import determine_apt_source
+from charms.layer.docker import render_configuration_template
 
 from charms.docker import Docker
 from charms.docker import DockerOpts
@@ -46,18 +50,6 @@ from charms import layer
 
 # Be sure you bind to it appropriately in your workload layer and
 # react to the proper event.
-
-
-docker_packages = {
-    'apt': ['docker.io'],
-    'upstream': ['docker-ce'],
-    'nvidia': [
-        'docker-ce',
-        'nvidia-docker2',
-        'nvidia-container-runtime',
-        'nvidia-container-runtime-hook'
-    ]
-}
 
 
 def hold_all():
@@ -103,28 +95,6 @@ def set_custom_docker_package():
             'Adding custom package {} to environment'.format(
                 config('docker_runtime_package')))
         docker_packages['custom'] = [config('docker_runtime_package')]
-
-
-def determine_apt_source():
-    """
-    :return: String docker runtime
-    """
-    docker_runtime = config('docker_runtime')
-
-    if config('install_from_upstream'):
-        docker_runtime = 'upstream'
-
-    if docker_runtime == 'auto':
-        out = check_output(['lspci', '-nnk']).rstrip()
-        if arch() == 'amd64' \
-                and out.decode('utf-8').lower().count('nvidia') > 0:
-            docker_runtime = 'nvidia'
-        else:
-            docker_runtime = 'apt'
-
-    hookenv.log(
-        'Setting runtime to {}'.format(docker_packages))
-    return docker_runtime
 
 
 @when_not('docker.ready')
@@ -177,20 +147,7 @@ def install():
         return False
 
     validate_config()
-    opts = DockerOpts()
-    render(
-        'docker.defaults',
-        '/etc/default/docker',
-        {
-            'opts': opts.to_s(),
-            'docker_runtime': runtime
-        }
-    )
-    render(
-        'docker.systemd',
-        '/lib/systemd/system/docker.service',
-        config()
-    )
+    render_configuration_template(service=True)
     reload_system_daemons()
 
     hold_all()
@@ -776,18 +733,7 @@ def recycle_daemon():
 
     # Re-render our docker daemon template at this time... because we're
     # restarting. And its nice to play nice with others. Isn't that nice?
-    opts = DockerOpts()
-    runtime = determine_apt_source()
-    render(
-        'docker.defaults',
-        '/etc/default/docker',
-        {
-            'opts': opts.to_s(),
-            'manual': config('docker-opts'),
-            'docker_runtime': runtime
-        }
-    )
-    render('docker.systemd', '/lib/systemd/system/docker.service', config())
+    render_configuration_template(service=True)
     reload_system_daemons()
     host.service_restart('docker')
 
@@ -849,20 +795,3 @@ def _remove_docker_network_bridge():
 
     # Render the config and restart docker.
     recycle_daemon()
-
-
-def arch():
-    """
-    Return the package architecture as a string.
-
-    :return: String
-    """
-    # Get the package architecture for this system.
-    if not arch.architecture:
-        arch.architecture = check_output(
-            ['dpkg', '--print-architecture']).rstrip()
-        arch.architecture = arch.architecture.decode('utf-8')
-    return arch.architecture
-
-
-arch.architecture = None  # noqa: E261, E305
