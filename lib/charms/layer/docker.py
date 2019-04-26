@@ -64,6 +64,7 @@ def render_configuration_template(service=False):
         '/etc/default/docker',
         {
             'opts': opts.to_s(),
+            'manual': config('docker-opts'),
             'docker_runtime': runtime
         }
     )
