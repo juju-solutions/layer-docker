@@ -32,9 +32,9 @@ def determine_apt_source():
     """
     config = hookenv.config
 
-    docker_runtime = config('docker_runtime')
+    docker_runtime = config('docker-runtime')
 
-    if config('install_from_upstream'):
+    if config('install-from-upstream'):
         docker_runtime = 'upstream'
 
     if docker_runtime == 'auto':
@@ -65,7 +65,7 @@ def render_configuration_template(service=False):
         {
             'opts': opts.to_s(),
             'manual': config('docker-opts'),
-            'docker_runtime': runtime
+            'docker-runtime': runtime
         }
     )
 

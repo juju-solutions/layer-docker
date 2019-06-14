@@ -93,8 +93,8 @@ def set_custom_docker_package():
     if runtime == 'custom':
         hookenv.log(
             'Adding custom package {} to environment'.format(
-                config('docker_runtime_package')))
-        docker_packages['custom'] = [config('docker_runtime_package')]
+                config('docker-runtime-package')))
+        docker_packages['custom'] = [config('docker-runtime-package')]
 
 
 @when_not('docker.ready')
@@ -162,7 +162,7 @@ def install():
     check_call(['usermod', '-aG', 'docker', 'ubuntu'])
 
 
-@when('config.changed.install_from_upstream', 'docker.ready')
+@when('config.changed.install-from-upstream', 'docker.ready')
 def toggle_install_from_upstream():
     """
     :return: None
@@ -183,7 +183,7 @@ def toggle_docker_daemon_source():
     """
     A disruptive reaction to config changing that will remove the existing
     docker daemon and install the latest available deb from the upstream PPA,
-    Nvidia PPA, or Universe depending on the docker_runtime setting.
+    Nvidia PPA, or Universe depending on the docker-runtime setting.
 
     :return: None or False
     """
@@ -234,8 +234,8 @@ def toggle_docker_daemon_source():
         hookenv.log('Not touching packages.')
 
 
-@when_any('config.changed.http_proxy', 'config.changed.https_proxy',
-          'config.changed.no_proxy')
+@when_any('config.changed.http-proxy', 'config.changed.https-proxy',
+          'config.changed.no-proxy')
 @when('docker.ready')
 def proxy_changed():
     """
@@ -376,24 +376,24 @@ def install_from_custom_apt():
     """
     status_set('maintenance', 'Installing Docker from custom repository.')
 
-    repo_string = config('docker_runtime_repo')
-    key_url = config('docker_runtime_key_url')
-    package_name = config('docker_runtime_package')
+    repo_string = config('docker-runtime-repo')
+    key_url = config('docker-runtime-key-url')
+    package_name = config('docker-runtime-package')
 
     if not repo_string:
-        message = '`docker_runtime_repo` must be set'
+        message = '`docker-runtime-repo` must be set'
         hookenv.log(message)
         hookenv.status_set('blocked', message)
         return False
 
     if not key_url:
-        message = '`docker_runtime_key_url` must be set'
+        message = '`docker-runtime-key-url` must be set'
         hookenv.log(message)
         hookenv.status_set('blocked', message)
         return False
 
     if not package_name:
-        message = '`docker_runtime_package` must be set'
+        message = '`docker-runtime-package` must be set'
         hookenv.log(message)
         hookenv.status_set('blocked', message)
         return False
@@ -515,7 +515,7 @@ def add_apt_key(key):
     :return: None
     """
     keyserver = config('apt-key-server')
-    http_proxy = config('http_proxy')
+    http_proxy = config('http-proxy')
     cmd = 'apt-key adv --keyserver {0}'.format(keyserver)
     if http_proxy:
         cmd = '{0} --keyserver-options http-proxy={1}'.format(cmd, http_proxy)
@@ -666,8 +666,8 @@ def initial_nrpe_config():
 
 @when('docker.ready')
 @when('nrpe-external-master.available')
-@when_any('config.changed.nagios_context',
-          'config.changed.nagios_servicegroups')
+@when_any('config.changed.nagios-context',
+          'config.changed.nagios-servicegroups')
 def update_nrpe_config():
     """
     :return: None
@@ -717,8 +717,8 @@ def validate_config():
     max_line = 2048
     line_prefix_len = len('Environment="NO_PROXY=""')
     remain_len = max_line - line_prefix_len
-    if len(config('no_proxy')) > remain_len:
-        raise ConfigError('no_proxy longer than {} chars.'.format(remain_len))
+    if len(config('no-proxy')) > remain_len:
+        raise ConfigError('no-proxy longer than {} chars.'.format(remain_len))
 
 
 def recycle_daemon():

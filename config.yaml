@@ -15,37 +15,37 @@ options:
        Enable GRUB cgroup overrides cgroup_enable=memory swapaccount=1. WARNING
        changing this option will reboot the host - use with caution on production
        services.
-  install_from_upstream:
+  install-from-upstream:
     type: boolean
     default: false
     description: |
-      Toggle installation from Ubuntu archive vs the Docker PPA (DEPRECATED; please use docker_runtime instead).
-  docker_runtime:
+      Toggle installation from Ubuntu archive vs the Docker PPA (DEPRECATED; please use docker-runtime instead).
+  docker-runtime:
     type: string
     default: "auto"
     description: |
       Docker runtime to install valid values are "upstream" (Docker PPA), "nvidia" (Nvidia PPA),
       "apt" (Ubuntu archive), "auto" (Nvidia PPA or Ubuntu archive, based on your hardware),
-      or "custom" (must have set `docker_runtime_repo` URL, `docker_runtime_key_url` URL and
-      `docker_runtime_package` name).
-  docker_runtime_repo:
+      or "custom" (must have set `docker-runtime-repo` URL, `docker-runtime-key-url` URL and
+      `docker-runtime-package` name).
+  docker-runtime-repo:
     type: string
     default: ""
     description: |
       Custom Docker repository, given in deb format.  Use `{ARCH}` to determine architecture at
       runtime.  Use `{CODE}` to set release codename.  E.g.
       `deb [arch={ARCH}] https://download.docker.com/linux/ubuntu {CODE} stable`.
-  docker_runtime_key_url:
+  docker-runtime-key-url:
     type: string
     default: ""
     description: |
       Custom Docker repository validation key URL.
-  docker_runtime_package:
+  docker-runtime-package:
     type: string
     default: ""
     description: |
       Custom Docker repository package name.
-  cuda_repo:
+  cuda-repo:
     type: string
     default: "10.0.130-1"
     description: |
@@ -65,25 +65,25 @@ options:
     default: "docker-ce=5:18.09.1~3-0~ubuntu-bionic"
     description: |
       The pinned version of docker-ce package installed with nvidia-docker.
-  http_proxy:
+  http-proxy:
      type: string
      default: ""
      description: |
-        URL to use for HTTP_PROXY to be used by Docker. Useful in
+        URL to use for HTTP-PROXY to be used by Docker. Useful in
         egress-filtered environments where a proxy is the only option for
         accessing the registry to pull images.
-  https_proxy:
+  https-proxy:
     type: string
     default: ""
     description: |
-        URL to use for HTTPS_PROXY to be used by Docker. Useful in
+        URL to use for HTTPS-PROXY to be used by Docker. Useful in
         egress-filtered environments where a proxy is the only option for
         accessing the registry to pull images.
-  no_proxy:
+  no-proxy:
     type: string
     default: ""
     description: |
         Comma-separated list of destinations (either domain names or IP
         addresses) which should be accessed directly, rather than through
-        the proxy defined in http_proxy or https_proxy. Must be less than
+        the proxy defined in http-proxy or https-proxy. Must be less than
         2023 characters long.
