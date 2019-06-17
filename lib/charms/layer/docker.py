@@ -65,7 +65,7 @@ def render_configuration_template(service=False):
         {
             'opts': opts.to_s(),
             'manual': config('docker-opts'),
-            'docker-runtime': runtime
+            'docker_runtime': runtime
         }
     )
 

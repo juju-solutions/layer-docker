@@ -69,14 +69,14 @@ options:
      type: string
      default: ""
      description: |
-        URL to use for HTTP-PROXY to be used by Docker. Useful in
+        URL to use for HTTP_PROXY to be used by Docker. Useful in
         egress-filtered environments where a proxy is the only option for
         accessing the registry to pull images.
   https-proxy:
     type: string
     default: ""
     description: |
-        URL to use for HTTPS-PROXY to be used by Docker. Useful in
+        URL to use for HTTPS_PROXY to be used by Docker. Useful in
         egress-filtered environments where a proxy is the only option for
         accessing the registry to pull images.
   no-proxy:
@@ -85,5 +85,5 @@ options:
     description: |
         Comma-separated list of destinations (either domain names or IP
         addresses) which should be accessed directly, rather than through
-        the proxy defined in http-proxy or https-proxy. Must be less than
+        the proxy defined in http_proxy or http_proxy. Must be less than
         2023 characters long.
