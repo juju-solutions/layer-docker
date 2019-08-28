@@ -58,10 +58,6 @@ def render_configuration_template(service=False):
     opts = DockerOpts()
     config = hookenv.config
 
-    # If juju environment variables are defined, take precedent
-    # over config.yaml.
-    # See: https://github.com/dshcherb/charm-helpers/blob/eba3742de6a7023f22778ba58fbbb0ac212d2ea6/charmhelpers/core/hookenv.py#L1455
-    # &: https://bugs.launchpad.net/charm-layer-docker/+bug/1831712
     environment_config = hookenv.env_proxy_settings()
     modified_config = dict(config())
     parsed_hosts = ""
@@ -83,8 +79,9 @@ def render_configuration_template(service=False):
             'NO_PROXY': parsed_hosts,
             'no_proxy': parsed_hosts
         })
-
-        modified_config.update(environment_config)
+        for key in ['http_proxy', 'https_proxy', 'no_proxy']:
+            if not modified_config.get(key):
+                modified_config[key] = environment_config.get(key)
 
     runtime = determine_apt_source()
 

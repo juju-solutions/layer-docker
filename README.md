@@ -68,8 +68,6 @@ issues about this.
 See [config.yaml](config.yaml) for
 list of configuration options.
 
-> Note: Setting HTTP proxy values will be overriden if `juju-http-proxy` or `juju-https-proxy` settings are set on the model.
-
 ## Docker Compose
 
 This Charm also installs the 'docker-compose' python package using pip. So
