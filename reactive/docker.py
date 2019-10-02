@@ -1,5 +1,4 @@
 import os
-import json
 import requests
 from shlex import split
 from subprocess import check_call
@@ -27,6 +26,7 @@ from charms.reactive import when_any
 from charms.reactive import when_not
 from charms.reactive.helpers import data_changed
 
+from charms.layer import docker
 from charms.layer.docker import arch
 from charms.layer.docker import docker_packages
 from charms.layer.docker import determine_apt_source
@@ -131,20 +131,23 @@ def install():
     runtime = determine_apt_source()
     remove_state('nvidia-docker.supported')
     remove_state('nvidia-docker.installed')
-    if runtime == 'upstream':
-        install_from_upstream_apt()
-    elif runtime == 'nvidia':
+    if runtime == 'nvidia':
         set_state('nvidia-docker.supported')
         install_from_nvidia_apt()
         set_state('nvidia-docker.installed')
-    elif runtime == 'apt':
-        install_from_archive_apt()
-    elif runtime == 'custom':
-        if not install_from_custom_apt():
-            return False  # If install fails, stop.
+        docker.set_daemon_json('default-runtime', 'nvidia')
     else:
-        hookenv.log('Unknown runtime {}'.format(runtime))
-        return False
+        docker.delete_daemon_json('default-runtime')
+        if runtime == 'upstream':
+            install_from_upstream_apt()
+        elif runtime == 'apt':
+            install_from_archive_apt()
+        elif runtime == 'custom':
+            if not install_from_custom_apt():
+                return False  # If install fails, stop.
+        else:
+            hookenv.log('Unknown runtime {}'.format(runtime))
+            return False
 
     validate_config()
     render_configuration_template(service=True)
@@ -234,13 +237,15 @@ def toggle_docker_daemon_source():
         hookenv.log('Not touching packages.')
 
 
-@when_any('config.changed.http_proxy', 'config.changed.https_proxy',
-          'config.changed.no_proxy')
+@when_any('config.changed.http_proxy',
+          'config.changed.https_proxy',
+          'config.changed.no_proxy',
+          'config.changed.daemon-opts')
 @when('docker.ready')
-def proxy_changed():
+def proxy_or_daemon_opts_changed():
     """
-    The proxy information has changed, render templates and restart the
-    docker daemon.
+    The proxy or daemon configuration have changed, render templates and
+    restart the docker daemon.
 
     :return: None
     """
@@ -365,8 +370,6 @@ def install_from_nvidia_apt():
     apt_install(['cuda-drivers', docker_ce, nvidia_docker2,
                  nv_container_runtime], fatal=True)
 
-    fix_docker_runtime_nvidia()
-
 
 def install_from_custom_apt():
     """
@@ -459,22 +462,6 @@ def install_cuda_drivers_repo(architecture, release, ubuntu):
 
     command = 'dpkg -i {}'.format(cuda_repository_package)
     check_call(split(command))
-
-
-def fix_docker_runtime_nvidia():
-    """
-    The default runtime needs setting
-    to `nvidia` after Docker installation.
-
-    :return: None
-    """
-    with open('/etc/docker/daemon.json') as f:
-        data = json.load(f)
-    data['default-runtime'] = 'nvidia'
-    with open('/etc/docker/daemon.json', 'w') as f:
-        json.dump(data, f)
-
-    host.service_restart('docker')
 
 
 def write_docker_sources(debs):

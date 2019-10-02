@@ -7,7 +7,32 @@ options:
     type: string
     default : ""
     description: |
-        Extra options to pass to the Docker daemon. e.g. --insecure-registry.
+      Docker daemon command line arguments that are passed to `dockerd` when
+      it starts, e.g. `--insecure-registry`.
+
+      Prefer to use `daemon-opts` instead of this. See the `daemon-opts`
+      description for more info.
+  daemon-opts:
+    type: string
+    default: |
+      {
+        "log-driver": "json-file",
+        "log-opts": {
+          "max-size": "10m",
+          "max-file": "100"
+        }
+      }
+    description: |
+      Docker daemon configuration options, in json format, which are written
+      directly to `/etc/docker/daemon.json`.
+
+      Prefer to use this instead of `docker-opts`. While the two can
+      be used together, care should be taken to not specify the same option
+      in both places. Doing so will cause the Docker daemon to exit with an
+      error.
+
+      More info about available options can be found at
+      https://docs.docker.com/engine/reference/commandline/dockerd/#daemon-configuration-file
   enable-cgroups:
     type: boolean
     default: false
