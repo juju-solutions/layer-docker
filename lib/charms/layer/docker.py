@@ -1,3 +1,5 @@
+import json
+
 from subprocess import check_output
 from charms.docker import DockerOpts
 from charmhelpers.core import hookenv
@@ -75,3 +77,40 @@ def render_configuration_template(service=False):
             '/lib/systemd/system/docker.service',
             config()
         )
+
+    write_logging_config()
+
+
+def read_daemon_json():
+    """Return the contents of /etc/docker/daemon.json as a dictionary.
+
+    """
+    try:
+        with open('/etc/docker/daemon.json') as f:
+            return json.load(f)
+    except IOError, json.decoder.JSONDecodeError:
+        return {}
+
+
+def write_daemon_json(dictionary):
+    """Serialize `dictionary` to json and write it to /etc/docker/daemon.json.
+
+    """
+    with open('/etc/docker/daemon.json', 'w') as f:
+        json.dump(dictionary, f)
+
+
+def write_logging_config():
+    """Reads Docker logging configuration settings from charm config and
+    writes it to /etc/docker/daemon.json.
+
+    """
+    config = hookenv.config
+    log_driver = config("log-driver")
+    log_opts = config("log-opts")
+    log_opts = json.loads(log_opts)
+
+    daemon_config = read_daemon_json()
+    daemon_config['log-driver'] = log_driver
+    daemon_config['log-opts'] = log_opts
+    write_daemon_json(daemon_config)

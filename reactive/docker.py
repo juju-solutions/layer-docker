@@ -31,6 +31,8 @@ from charms.layer.docker import arch
 from charms.layer.docker import docker_packages
 from charms.layer.docker import determine_apt_source
 from charms.layer.docker import render_configuration_template
+from charms.layer.docker import read_daemon_json
+from charms.layer.docker import write_daemon_json
 
 from charms.docker import Docker
 from charms.docker import DockerOpts
@@ -234,13 +236,16 @@ def toggle_docker_daemon_source():
         hookenv.log('Not touching packages.')
 
 
-@when_any('config.changed.http_proxy', 'config.changed.https_proxy',
-          'config.changed.no_proxy')
+@when_any('config.changed.http_proxy',
+          'config.changed.https_proxy',
+          'config.changed.no_proxy',
+          'config.changed.log-driver',
+          'config.changed.log-opts')
 @when('docker.ready')
-def proxy_changed():
+def proxy_or_logging_changed():
     """
-    The proxy information has changed, render templates and restart the
-    docker daemon.
+    The proxy or logging configuration has changed, render templates and restart
+    the docker daemon.
 
     :return: None
     """
@@ -468,11 +473,9 @@ def fix_docker_runtime_nvidia():
 
     :return: None
     """
-    with open('/etc/docker/daemon.json') as f:
-        data = json.load(f)
+    data = read_daemon_json()
     data['default-runtime'] = 'nvidia'
-    with open('/etc/docker/daemon.json', 'w') as f:
-        json.dump(data, f)
+    write_daemon_json(data)
 
     host.service_restart('docker')
 
