@@ -1,5 +1,4 @@
 import os
-import json
 import requests
 from shlex import split
 from subprocess import check_call
@@ -244,8 +243,8 @@ def toggle_docker_daemon_source():
 @when('docker.ready')
 def proxy_or_logging_changed():
     """
-    The proxy or logging configuration has changed, render templates and restart
-    the docker daemon.
+    The proxy or logging configuration has changed, render templates and
+    restart the docker daemon.
 
     :return: None
     """
