@@ -104,39 +104,38 @@ def render_configuration_template(service=False):
             modified_config
         )
 
-    write_logging_config()
+    write_logging_config(config)
 
 
-def read_daemon_json():
+def read_daemon_json(path='/etc/docker/daemon.json'):
     """Return the contents of /etc/docker/daemon.json as a dictionary.
 
     """
     try:
-        with open('/etc/docker/daemon.json') as f:
+        with open(path) as f:
             return json.load(f)
-    except IOError, json.decoder.JSONDecodeError:
+    except (IOError, json.decoder.JSONDecodeError):
         return {}
 
 
-def write_daemon_json(dictionary):
+def write_daemon_json(dictionary, path='/etc/docker/daemon.json'):
     """Serialize `dictionary` to json and write it to /etc/docker/daemon.json.
 
     """
-    with open('/etc/docker/daemon.json', 'w') as f:
+    with open(path, 'w') as f:
         json.dump(dictionary, f)
 
 
-def write_logging_config():
+def write_logging_config(config, path='/etc/docker/daemon.json'):
     """Reads Docker logging configuration settings from charm config and
     writes it to /etc/docker/daemon.json.
 
     """
-    config = hookenv.config
     log_driver = config("log-driver")
     log_opts = config("log-opts")
     log_opts = json.loads(log_opts)
 
-    daemon_config = read_daemon_json()
+    daemon_config = read_daemon_json(path=path)
     daemon_config['log-driver'] = log_driver
     daemon_config['log-opts'] = log_opts
-    write_daemon_json(daemon_config)
+    write_daemon_json(daemon_config, path=path)
