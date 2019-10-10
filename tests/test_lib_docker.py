@@ -32,7 +32,7 @@ def test_write_daemon_json():
     with tempfile.NamedTemporaryFile() as f:
         write_daemon_json(mock_config, f.name)
         f.seek(0)
-        assert json.loads(f.read()) == daemon_opts
+        assert json.loads(f.read().decode('utf8')) == daemon_opts
 
     # Test the case where nvidia runtime is being used.
     # The config written to the json file should contain
@@ -43,4 +43,4 @@ def test_write_daemon_json():
     with tempfile.NamedTemporaryFile() as f:
         write_daemon_json(mock_config, f.name)
         f.seek(0)
-        assert json.loads(f.read()) == with_nvidia
+        assert json.loads(f.read().decode('utf8')) == with_nvidia
