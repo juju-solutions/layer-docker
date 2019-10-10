@@ -6,6 +6,10 @@ from charms.reactive import is_state
 
 
 def test_write_daemon_json():
+    # Test the case where nvidia runtime is not being used.
+    # The daemon-opts in the config should match what gets
+    # written to the json file.
+
     is_state.return_value = False
     daemon_opts = {
         "log-driver": "json-file",
@@ -29,6 +33,11 @@ def test_write_daemon_json():
         write_daemon_json(mock_config, f.name)
         f.seek(0)
         assert json.loads(f.read()) == daemon_opts
+
+    # Test the case where nvidia runtime is being used.
+    # The config written to the json file should contain
+    # default-runtime=nvidia, even if that wasn't explicitly
+    # in the daemon-opts config.
 
     is_state.return_value = True
     with tempfile.NamedTemporaryFile() as f:

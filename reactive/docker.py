@@ -236,12 +236,11 @@ def toggle_docker_daemon_source():
 @when_any('config.changed.http_proxy',
           'config.changed.https_proxy',
           'config.changed.no_proxy',
-          'config.changed.log-driver',
-          'config.changed.log-opts')
+          'config.changed.daemon-opts')
 @when('docker.ready')
-def proxy_or_logging_changed():
+def proxy_or_daemon_opts_changed():
     """
-    The proxy or logging configuration has changed, render templates and
+    The proxy or daemon configuration have changed, render templates and
     restart the docker daemon.
 
     :return: None
