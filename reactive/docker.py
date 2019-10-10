@@ -30,8 +30,6 @@ from charms.layer.docker import arch
 from charms.layer.docker import docker_packages
 from charms.layer.docker import determine_apt_source
 from charms.layer.docker import render_configuration_template
-from charms.layer.docker import read_daemon_json
-from charms.layer.docker import write_daemon_json
 
 from charms.docker import Docker
 from charms.docker import DockerOpts
@@ -369,8 +367,6 @@ def install_from_nvidia_apt():
     apt_install(['cuda-drivers', docker_ce, nvidia_docker2,
                  nv_container_runtime], fatal=True)
 
-    fix_docker_runtime_nvidia()
-
 
 def install_from_custom_apt():
     """
@@ -463,20 +459,6 @@ def install_cuda_drivers_repo(architecture, release, ubuntu):
 
     command = 'dpkg -i {}'.format(cuda_repository_package)
     check_call(split(command))
-
-
-def fix_docker_runtime_nvidia():
-    """
-    The default runtime needs setting
-    to `nvidia` after Docker installation.
-
-    :return: None
-    """
-    data = read_daemon_json()
-    data['default-runtime'] = 'nvidia'
-    write_daemon_json(data)
-
-    host.service_restart('docker')
 
 
 def write_docker_sources(debs):

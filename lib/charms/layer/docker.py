@@ -3,6 +3,7 @@ import json
 
 from subprocess import check_output
 from charms.docker import DockerOpts
+from charms.reactive import is_state
 from charmhelpers.core import hookenv
 from charmhelpers.core.templating import render
 
@@ -104,38 +105,19 @@ def render_configuration_template(service=False):
             modified_config
         )
 
-    write_logging_config(config)
+    write_daemon_json(config)
 
 
-def read_daemon_json(path='/etc/docker/daemon.json'):
-    """Return the contents of /etc/docker/daemon.json as a dictionary.
-
-    """
-    try:
-        with open(path) as f:
-            return json.load(f)
-    except (IOError, json.decoder.JSONDecodeError):
-        return {}
-
-
-def write_daemon_json(dictionary, path='/etc/docker/daemon.json'):
-    """Serialize `dictionary` to json and write it to /etc/docker/daemon.json.
-
-    """
-    with open(path, 'w') as f:
-        json.dump(dictionary, f)
-
-
-def write_logging_config(config, path='/etc/docker/daemon.json'):
-    """Reads Docker logging configuration settings from charm config and
+def write_daemon_json(config, path='/etc/docker/daemon.json'):
+    """Reads Docker daemon options from charm config and
     writes it to /etc/docker/daemon.json.
 
     """
-    log_driver = config("log-driver")
-    log_opts = config("log-opts")
-    log_opts = json.loads(log_opts)
+    daemon_opts = config("daemon-opts")
+    daemon_opts = json.loads(daemon_opts)
 
-    daemon_config = read_daemon_json(path=path)
-    daemon_config['log-driver'] = log_driver
-    daemon_config['log-opts'] = log_opts
-    write_daemon_json(daemon_config, path=path)
+    if is_state('nvidia-docker.installed'):
+        daemon_opts['default-runtime'] = 'nvidia'
+
+    with open(path, 'w') as f:
+        json.dump(daemon_opts, f)

@@ -1,46 +1,37 @@
+import json
 import tempfile
 
-from charms.layer.docker import read_daemon_json
 from charms.layer.docker import write_daemon_json
-from charms.layer.docker import write_logging_config
-
-
-def test_read_daemon_json_no_file():
-    assert read_daemon_json(path='file-does-not-exist') == {}
-
-
-def test_read_daemon_json_invalid_contents():
-    with tempfile.NamedTemporaryFile() as f:
-        assert read_daemon_json(f.name) == {}
-
-
-def test_read_daemon_json_valid_contents():
-    with tempfile.NamedTemporaryFile() as f:
-        f.write(b'{"log-driver": "json-file"}')
-        f.seek(0)
-        assert read_daemon_json(f.name) == {'log-driver': 'json-file'}
+from charms.reactive import is_state
 
 
 def test_write_daemon_json():
-    d = {'log-driver': 'json-file'}
-    with tempfile.NamedTemporaryFile() as f:
-        write_daemon_json(d, f.name)
-        assert d == read_daemon_json(f.name)
-
-
-def test_write_logging_config():
-    config = {
+    is_state.return_value = False
+    daemon_opts = {
         "log-driver": "json-file",
-        "log-opts": '{"max-size": "10m", "max-file": "100"}',
+        "log-opts": {
+          "max-size": "10m",
+          "max-file": "100"
+        }
+    }
+
+    with_nvidia = daemon_opts.copy()
+    with_nvidia['default-runtime'] = 'nvidia'
+
+    config = {
+        "daemon-opts": json.dumps(daemon_opts)
     }
 
     def mock_config(key):
         return config[key]
 
-    expected = {
-        "log-driver": "json-file",
-        "log-opts": {"max-size": "10m", "max-file": "100"},
-    }
     with tempfile.NamedTemporaryFile() as f:
-        write_logging_config(mock_config, f.name)
-        assert read_daemon_json(f.name) == expected
+        write_daemon_json(mock_config, f.name)
+        f.seek(0)
+        assert json.loads(f.read()) == daemon_opts
+
+    is_state.return_value = True
+    with tempfile.NamedTemporaryFile() as f:
+        write_daemon_json(mock_config, f.name)
+        f.seek(0)
+        assert json.loads(f.read()) == with_nvidia

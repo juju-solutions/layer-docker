@@ -7,25 +7,32 @@ options:
     type: string
     default : ""
     description: |
-        Extra options to pass to the Docker daemon. e.g. --insecure-registry.
-  log-driver:
-    type: string
-    default: "json-file"
-    description: |
-      The logging driver to use for container logs. For options see
-      https://docs.docker.com/config/containers/logging/configure/.
-  log-opts:
+      Docker daemon command line arguments that are passed to `dockerd` when
+      it starts, e.g. `--insecure-registry`.
+
+      Prefer to use `daemon-opts` instead of this. See the `daemon-opts`
+      description for more info.
+  daemon-opts:
     type: string
     default: |
       {
-        "max-size": "10m",
-        "max-file": "100",
+        "log-driver": "json-file",
+        "log-opts": {
+          "max-size": "10m",
+          "max-file": "100"
+        }
       }
     description: |
-      Logging driver configuration options. The default configuration will
-      rotate the log once it reaches 10M in size, and will keep a maximum of
-      100 log files. For additional options, consult the documentation for
-      the logging driver being used.
+      Docker daemon configuration options, in json format, which are written
+      directly to `/etc/docker/daemon.json`.
+
+      Prefer to use this instead of `docker-opts`. While the two can
+      be used together, care should be taken to not specify the same option
+      in both places. Doing so will cause the Docker daemon to exit with an
+      error.
+
+      More info about available options can be found at
+      https://docs.docker.com/engine/reference/commandline/dockerd/#daemon-configuration-file
   enable-cgroups:
     type: boolean
     default: false
