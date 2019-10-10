@@ -3,8 +3,8 @@ import json
 
 from subprocess import check_output
 from charms.docker import DockerOpts
-from charms.reactive import is_state
 from charmhelpers.core import hookenv
+from charmhelpers.core import unitdata
 from charmhelpers.core.templating import render
 
 docker_packages = {
@@ -105,19 +105,59 @@ def render_configuration_template(service=False):
             modified_config
         )
 
-    write_daemon_json(config)
+    write_daemon_json()
 
 
-def write_daemon_json(config, path='/etc/docker/daemon.json'):
-    """Reads Docker daemon options from charm config and
-    writes it to /etc/docker/daemon.json.
+def write_daemon_json():
+    """Reads Docker daemon options from `daemon-opts` charm config and
+    writes them to /etc/docker/daemon.json.
+
+    :return: The dict written to /etc/docker/daemon.json
 
     """
-    daemon_opts = config("daemon-opts")
+    daemon_opts = hookenv.config("daemon-opts")
     daemon_opts = json.loads(daemon_opts)
 
-    if is_state('nvidia-docker.installed'):
-        daemon_opts['default-runtime'] = 'nvidia'
+    kv = unitdata.kv()
+    daemon_opts_additions = kv.get('daemon-opts-additions', default={})
 
-    with open(path, 'w') as f:
-        json.dump(daemon_opts, f)
+    # Merge the key/vals from charm config into those set by the charm.
+    # If there are any shared keys, we want the value from charm config to win.
+    daemon_opts_additions.update(daemon_opts)
+
+    with open('/etc/docker/daemon.json', 'w') as f:
+        json.dump(daemon_opts_additions, f)
+
+    return daemon_opts_additions
+
+
+def update_daemon_json(key, value):
+    """Add a key and value to /etc/docker/daemon.json.
+
+    The contents of /etc/docker/daemon.json are controlled by the `daemon-opts`
+    charm config, which is set by the Juju operator. In some cases, the charm
+    itself may want or need to augment the contents of that file.
+
+    :param key str: The key to add to daemon.json
+    :param value: The value for `key`; can be any json-serializable type
+    :return: If the update succeeds, returns the dict written to
+      /etc/docker/daemon.json; otherwise returns False
+
+    The update will succeed if:
+    - The key does not already exist in `daemon-opts`
+    - The key does exist in `daemon-opts`, but its value matches `value`
+
+    """
+    daemon_opts = hookenv.config("daemon-opts")
+    daemon_opts = json.loads(daemon_opts)
+
+    existing_value = daemon_opts.get(key)
+    if existing_value and existing_value != value:
+        return False
+
+    kv = unitdata.kv()
+    daemon_opts_additions = kv.get('daemon-opts-additions', default={})
+    daemon_opts_additions[key] = value
+    kv.set('daemon-opts-additions', daemon_opts_additions)
+
+    return write_daemon_json()

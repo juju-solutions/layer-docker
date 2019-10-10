@@ -1,16 +1,15 @@
 import json
-import tempfile
+
+from unittest.mock import mock_open
+from unittest.mock import patch
 
 from charms.layer.docker import write_daemon_json
-from charms.reactive import is_state
+from charms.layer.docker import update_daemon_json
 
 
-def test_write_daemon_json():
-    # Test the case where nvidia runtime is not being used.
-    # The daemon-opts in the config should match what gets
-    # written to the json file.
-
-    is_state.return_value = False
+@patch('charmhelpers.core.unitdata.kv')
+@patch('charmhelpers.core.hookenv.config')
+def test_write_daemon_json(config, kv):
     daemon_opts = {
         "log-driver": "json-file",
         "log-opts": {
@@ -19,28 +18,49 @@ def test_write_daemon_json():
         }
     }
 
-    with_nvidia = daemon_opts.copy()
-    with_nvidia['default-runtime'] = 'nvidia'
+    daemon_opts_additions = {
+        "log-driver": "this-will-be-overwritten",
+        "my-extra-config": "this-will-be-preserved",
+    }
 
-    config = {
+    charm_config = {
         "daemon-opts": json.dumps(daemon_opts)
     }
 
     def mock_config(key):
-        return config[key]
+        return charm_config[key]
+    config.side_effect = mock_config
+    kv.return_value.get.return_value = daemon_opts_additions
 
-    with tempfile.NamedTemporaryFile() as f:
-        write_daemon_json(mock_config, f.name)
-        f.seek(0)
-        assert json.loads(f.read().decode('utf8')) == daemon_opts
+    with patch('builtins.open', mock_open(), create=True):
+        daemon_opts_additions.update(daemon_opts)
+        result = write_daemon_json()
+        assert result == daemon_opts_additions
 
-    # Test the case where nvidia runtime is being used.
-    # The config written to the json file should contain
-    # default-runtime=nvidia, even if that wasn't explicitly
-    # in the daemon-opts config.
 
-    is_state.return_value = True
-    with tempfile.NamedTemporaryFile() as f:
-        write_daemon_json(mock_config, f.name)
-        f.seek(0)
-        assert json.loads(f.read().decode('utf8')) == with_nvidia
+@patch('charmhelpers.core.hookenv.config')
+def test_update_daemon_json(config):
+    daemon_opts = {
+        "log-driver": "json-file",
+        "log-opts": {
+          "max-size": "10m",
+          "max-file": "100"
+        }
+    }
+
+    charm_config = {
+        "daemon-opts": json.dumps(daemon_opts)
+    }
+
+    def mock_config(key):
+        return charm_config[key]
+    config.side_effect = mock_config
+
+    # Test that charm can't override a config value
+    assert update_daemon_json("log-driver", "new value") is False
+
+    with patch('builtins.open', mock_open(), create=True):
+        result = update_daemon_json("log-driver", "json-file")
+        assert result["log-driver"] == "json-file"
+        result = update_daemon_json("my-extra-config", "value")
+        assert result["my-extra-config"] == "value"

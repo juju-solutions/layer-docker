@@ -30,6 +30,7 @@ from charms.layer.docker import arch
 from charms.layer.docker import docker_packages
 from charms.layer.docker import determine_apt_source
 from charms.layer.docker import render_configuration_template
+from charms.layer.docker import update_daemon_json
 
 from charms.docker import Docker
 from charms.docker import DockerOpts
@@ -365,6 +366,7 @@ def install_from_nvidia_apt():
     nv_container_runtime = hookenv.config('nvidia-container-runtime-package')
     apt_install(['cuda-drivers', docker_ce, nvidia_docker2,
                  nv_container_runtime], fatal=True)
+    update_daemon_json('default-runtime', 'nvidia')
 
 
 def install_from_custom_apt():
