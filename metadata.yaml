@@ -16,9 +16,9 @@ tags:
   - layer
 subordinate: false
 series:
-  - xenial
-  - bionic
   - focal
+  - bionic
+  - xenial
 provides:
   dockerhost:
     interface: dockerhost
