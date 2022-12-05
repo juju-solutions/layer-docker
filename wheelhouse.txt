@@ -1,4 +1,12 @@
 charms.docker>=0.0.1,<=2.0.0
 vcversioner>=2.0.0,<=3.0.0
-charms.templating.jinja2>=0.0.1,<=2.0.0
 requests>=2.0.0,<3.0.0
+
+# idna>=2.28.1 and beyond (needed by requests)
+# requires flit-core for building its wheel.
+# 
+# flit-core can run on python3.6, but requires pip 
+# be upgraded to at least 20.0.2 (same as on focal)
+#
+flit-core<4
+pip==20.0.2  # necessary for bionic

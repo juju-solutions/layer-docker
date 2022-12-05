@@ -1,0 +1,16 @@
+name: Run tests with Tox
+
+on: [pull_request]
+
+jobs:
+  call-inclusive-naming-check:
+    name: Inclusive naming
+    uses: canonical-web-and-design/Inclusive-naming/.github/workflows/woke.yaml@main
+    with:
+      fail-on-error: "true"
+
+  lint-unit:
+    name: Lint Unit
+    uses: charmed-kubernetes/workflows/.github/workflows/lint-unit.yaml@main
+    needs:
+      - call-inclusive-naming-check 
