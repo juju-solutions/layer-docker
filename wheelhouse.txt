@@ -1,6 +1,5 @@
 charms.docker>=0.0.1,<=2.0.0
 vcversioner>=2.0.0,<=3.0.0
-requests>=2.0.0,<3.0.0
 
 # idna>=2.28.1 and beyond (needed by requests)
 # requires flit-core for building its wheel.

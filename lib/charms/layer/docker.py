@@ -8,14 +8,14 @@ from charmhelpers.core import unitdata
 from charmhelpers.core.templating import render
 
 docker_packages = {
-    'apt': ['docker.io'],
-    'upstream': ['docker-ce'],
-    'nvidia': [
-        'docker-ce',
-        'nvidia-docker2',
-        'nvidia-container-runtime',
-        'nvidia-container-runtime-hook'
-    ]
+    "apt": ["docker.io"],
+    "upstream": ["docker-ce"],
+    "nvidia": [
+        "docker-ce",
+        "nvidia-docker2",
+        "nvidia-container-runtime",
+        "nvidia-container-runtime-hook",
+    ],
 }
 
 
@@ -25,8 +25,7 @@ def arch():
 
     :return: String
     """
-    return check_output(['dpkg', '--print-architecture']) \
-        .rstrip().decode('utf-8')
+    return check_output(["dpkg", "--print-architecture"]).rstrip().decode("utf-8")
 
 
 def determine_apt_source():
@@ -35,21 +34,19 @@ def determine_apt_source():
     """
     config = hookenv.config
 
-    docker_runtime = config('docker_runtime')
+    docker_runtime = config("docker_runtime")
 
-    if config('install_from_upstream'):
-        docker_runtime = 'upstream'
+    if config("install_from_upstream"):
+        docker_runtime = "upstream"
 
-    if docker_runtime == 'auto':
-        out = check_output(['lspci', '-nnk']).rstrip()
-        if arch() == 'amd64' \
-                and out.decode('utf-8').lower().count('nvidia') > 0:
-            docker_runtime = 'nvidia'
+    if docker_runtime == "auto":
+        out = check_output(["lspci", "-nnk"]).rstrip()
+        if arch() == "amd64" and out.decode("utf-8").lower().count("nvidia") > 0:
+            docker_runtime = "nvidia"
         else:
-            docker_runtime = 'apt'
+            docker_runtime = "apt"
 
-    hookenv.log(
-        'Setting runtime to {}'.format(docker_packages))
+    hookenv.log("Setting runtime to {}".format(docker_packages))
     return docker_runtime
 
 
@@ -66,7 +63,7 @@ def render_configuration_template(service=False):
     parsed_hosts = ""
     if environment_config is not None:
         hosts = []
-        for address in environment_config.get('NO_PROXY', "").split(","):
+        for address in environment_config.get("NO_PROXY", "").split(","):
             address = address.strip()
             try:
                 net = ipaddress.ip_network(address)
@@ -78,32 +75,25 @@ def render_configuration_template(service=False):
             except ValueError:
                 hosts.append(address)
         parsed_hosts = ",".join(hosts)
-        environment_config.update({
-            'NO_PROXY': parsed_hosts,
-            'no_proxy': parsed_hosts
-        })
-        for key in ['http_proxy', 'https_proxy', 'no_proxy']:
+        environment_config.update({"NO_PROXY": parsed_hosts, "no_proxy": parsed_hosts})
+        for key in ["http_proxy", "https_proxy", "no_proxy"]:
             if not modified_config.get(key):
                 modified_config[key] = environment_config.get(key)
 
     runtime = determine_apt_source()
 
     render(
-        'docker.defaults',
-        '/etc/default/docker',
+        "docker.defaults",
+        "/etc/default/docker",
         {
-            'opts': opts.to_s(),
-            'manual': config('docker-opts'),
-            'docker_runtime': runtime
-        }
+            "opts": opts.to_s(),
+            "manual": config("docker-opts"),
+            "docker_runtime": runtime,
+        },
     )
 
     if service:
-        render(
-            'docker.systemd',
-            '/lib/systemd/system/docker.service',
-            modified_config
-        )
+        render("docker.systemd", "/lib/systemd/system/docker.service", modified_config)
 
     write_daemon_json()
 
@@ -119,13 +109,13 @@ def write_daemon_json():
     daemon_opts = json.loads(daemon_opts)
 
     kv = unitdata.kv()
-    daemon_opts_additions = kv.get('daemon-opts-additions', default={})
+    daemon_opts_additions = kv.get("daemon-opts-additions", default={})
 
     # Merge the key/vals from charm config into those set by the charm.
     # If there are any shared keys, we want the value from charm config to win.
     daemon_opts_additions.update(daemon_opts)
 
-    with open('/etc/docker/daemon.json', 'w') as f:
+    with open("/etc/docker/daemon.json", "w") as f:
         json.dump(daemon_opts_additions, f)
 
     return daemon_opts_additions
@@ -160,9 +150,9 @@ def set_daemon_json(key, value):
         return False
 
     kv = unitdata.kv()
-    daemon_opts_additions = kv.get('daemon-opts-additions', default={})
+    daemon_opts_additions = kv.get("daemon-opts-additions", default={})
     daemon_opts_additions[key] = value
-    kv.set('daemon-opts-additions', daemon_opts_additions)
+    kv.set("daemon-opts-additions", daemon_opts_additions)
     kv.flush()
 
     return write_daemon_json()
@@ -178,13 +168,13 @@ def delete_daemon_json(key):
 
     """
     kv = unitdata.kv()
-    daemon_opts_additions = kv.get('daemon-opts-additions', default={})
+    daemon_opts_additions = kv.get("daemon-opts-additions", default={})
 
     if key not in daemon_opts_additions:
         return False
 
     daemon_opts_additions.pop(key)
-    kv.set('daemon-opts-additions', daemon_opts_additions)
+    kv.set("daemon-opts-additions", daemon_opts_additions)
     kv.flush()
     write_daemon_json()
 
