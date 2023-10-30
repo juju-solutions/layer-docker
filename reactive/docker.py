@@ -428,7 +428,8 @@ def install_cuda_drivers_repo(architecture, release, ubuntu):
 
     with contextlib.closing(urlopen(repository_url)) as r:
         with open(cuda_repository_package, "wb") as f:
-            f.write(r.read())
+            while chunk := r.read(1024 * 1024):  # 1M chunks
+                f.write(chunk)
 
     command = "dpkg -i {}".format(cuda_repository_package)
     check_call(split(command))
