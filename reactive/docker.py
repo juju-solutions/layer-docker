@@ -38,6 +38,8 @@ from charms.docker import DockerOpts
 
 from charms import layer
 
+NRPE_PRIMARY = "nrpe-external-master"  # wokeignore:rule=master
+
 # 2 Major events are emitted from this layer.
 #
 # `docker.ready` is an event intended to signal other layers that need to
@@ -609,18 +611,18 @@ def dockerhost_connected(dockerhost):
     dockerhost.configure(Docker().socket)
 
 
-@when("nrpe-external-master.available")
-@when_not("nrpe-external-master.docker.initial-config")
+@when(f"{NRPE_PRIMARY}.available")
+@when_not(f"{NRPE_PRIMARY}.docker.initial-config")
 def initial_nrpe_config():
     """
     :return: None
     """
-    set_state("nrpe-external-master.docker.initial-config")
+    set_state(f"{NRPE_PRIMARY}.docker.initial-config")
     update_nrpe_config()
 
 
 @when("docker.ready")
-@when("nrpe-external-master.available")
+@when(f"{NRPE_PRIMARY}.available")
 @when_any("config.changed.nagios_context", "config.changed.nagios_servicegroups")
 def update_nrpe_config():
     """
@@ -638,13 +640,13 @@ def update_nrpe_config():
     nrpe_setup.write()
 
 
-@when_not("nrpe-external-master.available")
-@when("nrpe-external-master.docker.initial-config")
+@when_not(f"{NRPE_PRIMARY}.available")
+@when(f"{NRPE_PRIMARY}.docker.initial-config")
 def remove_nrpe_config():
     """
     :return: None
     """
-    remove_state("nrpe-external-master.docker.initial-config")
+    remove_state(f"{NRPE_PRIMARY}.docker.initial-config")
 
     # List of systemd services for which the checks will be removed.
     services = ["docker"]
