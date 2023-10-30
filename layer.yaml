@@ -13,5 +13,5 @@ defines:
     default: false
 exclude:
   - LAYER_README.md
-  - tests/10-deploy.py
-  - tests/tests.yaml
+  - tests/conftest.py
+  - tests/test_lib_docker.py
